@@ -23,16 +23,6 @@ data class MatchResult(
     }
 }
 
-/** Extract the Bridge link id from a Play Install Referrer string. */
-fun parseBridgeLink(referrer: String?): String? {
-    if (referrer.isNullOrEmpty()) return null
-    return referrer.split("&")
-        .map { it.split("=", limit = 2) }
-        .firstOrNull { it.size == 2 && it[0] == "bridge_link" }
-        ?.get(1)
-        ?.takeIf { it.isNotEmpty() }
-}
-
 /**
  * HTTP poster abstraction so the resolver is testable. The real Android wrapper
  * supplies one backed by OkHttp/HttpURLConnection. Returns the raw response
