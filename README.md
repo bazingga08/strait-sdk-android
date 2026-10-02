@@ -14,8 +14,12 @@ Kotlin `Int` is 32-bit and wraps like JS `|0`, so the hash ports verbatim.
 ```kotlin
 val device = DeviceFields(screenWidth, pixelRatio, language, timezone)
 // deterministic path: read Play Install Referrer → parseBridgeLink → POST /v1/referrer
-// else: POST Bridge.buildMatchBody(appId, device) to /v1/match
+//   body: Bridge.buildReferrerBody(publishableKey, linkId)
+// else: POST Bridge.buildMatchBody(publishableKey, device) to /v1/match
 ```
+
+**Publishable key:** Dashboard → Get started → Publishable key (`bk_pub_live_…`).
+It's safe to include in your app. Never put your secret key (`bk_live_…`) in an app.
 
 `computeSignature` / `h32` are the cross-language-verified core; `parseBridgeLink`
 extracts `bridge_link` from the Play Install Referrer for the deterministic match.

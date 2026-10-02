@@ -47,12 +47,40 @@ fun interface HttpPoster {
  * Referrer with bridge_link) is preferred; otherwise the fingerprint /v1/match.
  * The full Android wrapper (Context, InstallReferrerClient, display metrics) is
  * provided in the app layer; this core stays pure + testable.
+ *
+ * `publishableKey` is the workspace publishable key (`bk_pub_live_…` /
+ * `bk_pub_test_…`) from Dashboard → Get started. It is safe to ship in apps;
+ * never pass your secret key (`bk_live_…`).
  */
 object Bridge {
-    fun buildMatchBody(appId: String, device: DeviceFields): String =
-        """{"appId":"$appId","platform":"android","screenWidth":${device.screenWidth},""" +
-            """"pixelRatio":${device.pixelRatio},"language":"${device.language}","timezone":"${device.timezone}"}"""
+    /** JSON body for POST /v1/match (device-fingerprint match). */
+    fun buildMatchBody(publishableKey: String, device: DeviceFields): String =
+        "{\"publishableKey\":${jsonString(publishableKey)},\"platform\":\"android\"," +
+            "\"screenWidth\":${device.screenWidth},\"pixelRatio\":${device.pixelRatio}," +
+            "\"language\":${jsonString(device.language)},\"timezone\":${jsonString(device.timezone)}}"
 
-    fun buildReferrerBody(appId: String, linkId: String): String =
-        """{"appId":"$appId","linkId":"$linkId","platform":"android"}"""
+    /**
+     * JSON body for POST /v1/referrer (Play Install Referrer match). `linkId`
+     * comes from the referrer, which originates in a URL anyone can craft, so
+     * every string is JSON-escaped.
+     */
+    fun buildReferrerBody(publishableKey: String, linkId: String): String =
+        "{\"publishableKey\":${jsonString(publishableKey)},\"linkId\":${jsonString(linkId)}," +
+            "\"platform\":\"android\"}"
+}
+
+/** Quote + escape a string as a JSON string literal (RFC 8259). */
+internal fun jsonString(value: String): String {
+    val sb = StringBuilder(value.length + 2).append('"')
+    for (c in value) {
+        when (c) {
+            '"' -> sb.append("\\\"")
+            '\\' -> sb.append("\\\\")
+            '\n' -> sb.append("\\n")
+            '\r' -> sb.append("\\r")
+            '\t' -> sb.append("\\t")
+            else -> if (c < ' ') sb.append("\\u%04x".format(c.code)) else sb.append(c)
+        }
+    }
+    return sb.append('"').toString()
 }
