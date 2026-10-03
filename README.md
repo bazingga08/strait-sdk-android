@@ -38,6 +38,22 @@ Vectors: `src/test/resources/test-vectors.json` (signature) and
 `conformance-vectors.json` v2 (pure helpers). Both are byte-identical copies from
 `shared-spec`, so don't edit them here.
 
+## Install
+
+<!-- brand:install -->
+Published on [JitPack](https://jitpack.io) from this repo's version tags.
+
+```kotlin
+// settings.gradle.kts
+dependencyResolutionManagement {
+    repositories { google(); mavenCentral(); maven("https://jitpack.io") }
+}
+
+// app/build.gradle.kts
+dependencies { implementation("com.github.bazingga08:bridge-sdk-android:v0.4.0") }
+```
+<!-- /brand:install -->
+
 ## Android integration
 
 Calls that hit the network block the calling thread. Pass a background

@@ -25,6 +25,17 @@ B4/B6/B7 revisions). Shared vectors are now `conformance-vectors.json` v2.
 - New pure helpers: `parseBridgeClick`, `takeClickId`, `pruneOpenQueue`,
   `shouldRetryReport`, `newOpenId`, `OPEN_QUEUE_MAX`, `OPEN_QUEUE_MAX_AGE_MS`.
 
+### Packaging
+
+- Publish-ready on JitPack: `maven-publish` with sources + javadoc jars and full
+  POM metadata (name, description, URL, MIT license, developer, SCM, issues),
+  Gradle wrapper and `jitpack.yml` (JDK 17). Coordinates
+  `com.github.<owner>:<repo>:v<version>`. Test vectors never ship.
+- Owner, repo name, URLs and copyright holder come from `brand.json` (read by
+  Gradle directly; README install block + LICENSE applied by `scripts/brand.mjs`).
+- Tag `vX.Y.Z` → GitHub Actions runs the tests, builds the Maven artifacts and
+  (once switched on) asks JitPack to build the tag. See PUBLISHING.md.
+
 ## 0.3.0 (2026-10-03)
 
 Parity with the React Native SDK (shared-spec/SDK-CONTRACT.md B1–B13).

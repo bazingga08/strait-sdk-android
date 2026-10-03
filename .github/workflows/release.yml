@@ -1,0 +1,44 @@
+name: Release
+# Push a tag vX.Y.Z (matching `version` in build.gradle.kts). Consumers get it from
+# JitPack as com.github.<owner>:<repo>:vX.Y.Z — JitPack builds the tag itself the
+# first time someone requests it. This workflow tests the tag, builds the same Maven
+# artifacts (jar + sources + javadoc + POM) and, once the repo variable
+# JITPACK_ENABLED is "true" (repo public), asks JitPack to build it right away.
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: read
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Tag matches build.gradle.kts version
+        run: |
+          v="$(sed -n 's/^version = "\(.*\)"/\1/p' build.gradle.kts)"
+          [ "$GITHUB_REF_NAME" = "v$v" ] || { echo "::error::tag $GITHUB_REF_NAME does not match build.gradle.kts version $v"; exit 1; }
+      - run: ./gradlew test publishToMavenLocal --no-daemon
+      - run: node scripts/brand.mjs
+      - name: Artifacts present (jar, sources, javadoc, POM)
+        run: |
+          d="$HOME/.m2/repository/com/github/${GITHUB_REPOSITORY_OWNER}"
+          find "$d" -name '*.jar' -o -name '*.pom' | sort
+          for s in .jar -sources.jar -javadoc.jar .pom; do ls "$d"/*/*/*"$s" >/dev/null; done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: maven-artifacts
+          path: ~/.m2/repository/com/github/
+      - name: Ask JitPack to build this tag
+        if: vars.JITPACK_ENABLED == 'true'
+        run: |
+          node scripts/brand.mjs --release
+          curl -fsS --retry 3 --max-time 900 "https://jitpack.io/api/builds/com.github.${GITHUB_REPOSITORY}/${GITHUB_REF_NAME}" || true
+          echo "::notice::Check https://jitpack.io/#${GITHUB_REPOSITORY}/${GITHUB_REF_NAME}"
+      - if: vars.JITPACK_ENABLED != 'true'
+        run: echo "::notice::JITPACK_ENABLED repo variable is not 'true'; JitPack was not pinged (see PUBLISHING.md)."

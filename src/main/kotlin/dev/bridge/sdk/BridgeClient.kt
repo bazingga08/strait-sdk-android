@@ -109,7 +109,7 @@ class UrlConnectionTransport(
 class BridgeConfig(
     /** Workspace publishable key (bk_pub_live_...), Dashboard -> Get started. Never the secret key. */
     val publishableKey: String,
-    /** Your Bridge link host, e.g. https://bridge-redirect-engine.onrender.com */
+    /** Your Bridge link host, e.g. https://go.yourbrand.com */
     val endpoint: String,
     /** Extra hosts that serve your short links (custom domains), e.g. "https://go.brand.com". */
     val linkHosts: List<String> = emptyList(),

@@ -1,0 +1,3 @@
+# JitPack builds a version tag with the Gradle wrapper: ./gradlew publishToMavenLocal
+jdk:
+  - openjdk17
