@@ -158,7 +158,9 @@ class BridgeClient(private val config: BridgeConfig) {
         val initial = initialUrl?.takeIf { it.isNotBlank() }
         config.executor.execute {
             safely {
-                val firstLaunch = runCatching { config.storage.get(DEFERRED_FLAG) }.getOrNull() != "1"
+                // Unreadable storage counts as "already checked": never risk a stale
+                // deferred jump on every launch. Write failures are ignored (never throw).
+                val firstLaunch = runCatching { config.storage.get(DEFERRED_FLAG) }.getOrElse { "1" } != "1"
                 if (initial != null) {
                     // Opened by a link on first launch = the user's intent right now: no
                     // deferred check, but this open still counts as the install's first.

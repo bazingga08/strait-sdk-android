@@ -306,4 +306,28 @@ class OpensTest {
         assertFalse(body.has("openId"))
         assertFalse(body.has("at"))
     }
+
+    @Test
+    fun unreadableStorageIsAlreadyCheckedAndWriteFailuresNeverThrow() {
+        val broken = object : KeyValueStore {
+            override fun get(key: String): String? = throw java.io.IOException("io")
+            override fun set(key: String, value: String) = throw java.io.IOException("io")
+        }
+        val writeOnly = object : KeyValueStore {
+            override fun get(key: String): String? = null
+            override fun set(key: String, value: String) = throw java.io.IOException("full")
+        }
+        fun client(engine: FakeEngine, store: KeyValueStore) =
+            BridgeClient(BridgeConfig(pk, endpoint, storage = store, device = { device }, transport = engine))
+
+        val engine = FakeEngine("/v1/match" to noMatch, "/v1/resolve" to resolved)
+        client(engine, broken).start(null)
+        assertEquals(0, engine.of("/v1/match").size)
+        val e2 = FakeEngine("/v1/match" to noMatch)
+        client(e2, writeOnly).start(null) // must not throw
+        assertEquals(1, e2.of("/v1/match").size)
+        val e3 = FakeEngine("/v1/resolve" to resolved)
+        client(e3, writeOnly).start("https://links.test/sale") // must not throw
+        assertEquals(1, e3.of("/v1/resolve").size)
+    }
 }
