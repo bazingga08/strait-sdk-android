@@ -132,9 +132,10 @@ class StraitConfig(
 
 private const val DEFERRED_FLAG = "strait.deferredChecked"
 private const val QUEUE_KEY = "strait.pendingOpens"
+private const val TAP_KEY = "strait.lastTap"
 
 /**
- * Strait link client (contract B1-B14). Never throws from link handling.
+ * Strait link client (contract B1-B15). Never throws from link handling.
  * Listeners are called on the thread that resolved the link (the [StraitConfig.executor]).
  */
 class StraitClient(private val config: StraitConfig) {
@@ -234,8 +235,14 @@ class StraitClient(private val config: StraitConfig) {
         JSONObject()
     }
 
-    /** Conversion / revenue event (blocking). True when accepted. */
-    fun trackEvent(name: String, value: Double? = null, currency: String? = null, linkId: String? = null): Boolean = try {
+    /**
+     * Conversion / revenue event (blocking). True when accepted. Carries the tap
+     * id of the last attributed link open (<=7 days, contract B15) unless you
+     * pass [clickId] yourself.
+     */
+    fun trackEvent(
+        name: String, value: Double? = null, currency: String? = null, linkId: String? = null, clickId: String? = null,
+    ): Boolean = try {
         val body = JSONObject()
             .put("publishableKey", config.publishableKey)
             .put("event", name)
@@ -243,6 +250,8 @@ class StraitClient(private val config: StraitConfig) {
         if (value != null) body.put("value", value)
         if (currency != null) body.put("currency", currency)
         if (linkId != null) body.put("linkId", linkId)
+        val stored = runCatching { config.storage.get(TAP_KEY) }.getOrNull()
+        eventClickId(stored, config.clock(), clickId)?.let { body.put("clickId", it) }
         call("POST", "/v1/event", body).first.ok
     } catch (_: Exception) {
         false
@@ -282,6 +291,14 @@ class StraitClient(private val config: StraitConfig) {
             JSONObject()
         }
         return res to json
+    }
+
+    // --- remembered tap (B15): the tap id of the last attributed link open,
+    // sent with conversion events. An attributed open without a known tap id
+    // (short link, fingerprint match) forgets it: the newer touch wins.
+    // Storage failures are ignored.
+    private fun noteTap(clickId: String?, at: Long) {
+        runCatching { config.storage.set(TAP_KEY, if (clickId != null) rememberTap(clickId, at) else "") }
     }
 
     // --- open reports (B14): every open is reported once; failures are saved
@@ -365,6 +382,7 @@ class StraitClient(private val config: StraitConfig) {
             ?: return emit(LinkEvent(id, "direct", LinkRoute.APP_LINK, appState, false, reason = "invalid_url",
                 rawUrl = raw, ms = config.clock() - t0, at = t0))
         if (!c.needsResolve) {
+            if (c.clickId != null) noteTap(c.clickId, t0)
             val e = emit(LinkEvent(id, "direct", c.route, appState, true, rawUrl = raw, url = c.url, path = c.path,
                 params = c.params, ms = config.clock() - t0, at = t0))
             // Navigation never waits for the report: it is sent after the event.
@@ -387,6 +405,7 @@ class StraitClient(private val config: StraitConfig) {
             val reason = if (matched) null else (str(json, "reason") ?: str(json, "error"))
             val linkId = str(json, "linkId")
             val dest = destination(if (matched) str(json, "longUrl") else null)
+            if (matched) noteTap(null, t0)
             val e = emit(LinkEvent(id, "direct", LinkRoute.APP_LINK, appState, matched,
                 reason = reason, rawUrl = raw, url = dest.url, path = dest.path, params = dest.params,
                 linkId = linkId, ms = config.clock() - t0, at = t0))
@@ -426,9 +445,11 @@ class StraitClient(private val config: StraitConfig) {
                         .put("publishableKey", config.publishableKey)
                         .put("linkId", linkId)
                         .put("platform", "android")
-                    parseStraitClick(referrer)?.let { body.put("clickId", it) }
+                    val clickId = parseStraitClick(referrer)
+                    clickId?.let { body.put("clickId", it) }
                     val json = answered("/v1/referrer", tag(body))
                     if (json.opt("matched") == true) {
+                        if (record) noteTap(clickId, t0)
                         val dest = destination(str(json, "longUrl"))
                         return emit(LinkEvent(id, "deferred", LinkRoute.INSTALL_REFERRER, AppStateAtLink.CLOSED, true,
                             url = dest.url, path = dest.path, params = dest.params,
@@ -440,6 +461,7 @@ class StraitClient(private val config: StraitConfig) {
             putDevice(body, config.device())
             val json = answered("/v1/match", tag(body))
             val matched = json.opt("matched") == true
+            if (record && matched) noteTap(null, t0)
             val dest = destination(if (matched) str(json, "longUrl") else null)
             emit(LinkEvent(id, "deferred", LinkRoute.FINGERPRINT, AppStateAtLink.CLOSED, matched,
                 reason = if (matched) null else "no_match", url = dest.url, path = dest.path, params = dest.params,

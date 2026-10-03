@@ -212,6 +212,33 @@ const val OPEN_QUEUE_MAX: Int = 100
 fun <T> pruneOpenQueue(queue: List<T>, now: Long, at: (T) -> Long): List<T> =
     queue.filter { now - at(it) <= OPEN_QUEUE_MAX_AGE_MS }.takeLast(OPEN_QUEUE_MAX)
 
+/**
+ * Conversion events carry the tap id of the most recent attributed link open
+ * for this long (contract B15).
+ */
+const val ATTRIBUTION_WINDOW_MS: Long = 7L * 24 * 60 * 60 * 1000
+
+/** Storage value for the remembered tap (key `strait.lastTap`): `{"clickId":...,"at":<epoch ms>}`. */
+fun rememberTap(clickId: String, at: Long): String =
+    org.json.JSONObject().put("clickId", clickId.lowercase()).put("at", at).toString()
+
+/**
+ * The `clickId` a conversion event sends (contract B15): a non-empty [explicit]
+ * wins; otherwise the remembered tap ([stored], see [rememberTap]) when it is a
+ * valid tap id opened at most [ATTRIBUTION_WINDOW_MS] before [now] (and not
+ * after it). Anything unreadable means no tap.
+ */
+fun eventClickId(stored: String?, now: Long, explicit: String? = null): String? {
+    if (!explicit.isNullOrEmpty()) return explicit
+    if (stored.isNullOrEmpty()) return null
+    val tap = try { org.json.JSONObject(stored) } catch (_: Exception) { return null }
+    val clickId = tap.opt("clickId") as? String ?: return null
+    if (!CLICK_ID.matches(clickId)) return null
+    val at = (tap.opt("at") as? Number)?.toDouble()?.takeIf { it.isFinite() } ?: return null
+    val age = now - at
+    return if (age >= 0 && age <= ATTRIBUTION_WINDOW_MS) clickId.lowercase() else null
+}
+
 /** Whether a failed report should be kept for retry: no answer (null), 429 or 5xx. */
 fun shouldRetryReport(status: Int?): Boolean = status == null || status == 429 || status >= 500
 

@@ -390,4 +390,79 @@ class StraitClientTest {
         assertFalse(got.single().matched)
         assertNotNull(got.single().id)
     }
+
+    // --- conversion events carry the tap id (B15) ---------------------------
+
+    private val tap = "3f2a9c1e-7b4d-4e8a-9c0f-1a2b3c4d5e6f"
+    private val other = "11111111-2222-4333-8444-555555555555"
+    private val day = 24L * 60 * 60 * 1000
+    private val eventOk = mapOf("/v1/event" to JSONObject().put("ok", true), "/v1/open" to JSONObject().put("ok", true))
+    private fun lastEvent(h: Harness) = h.engine.calls.last { it.path == "/v1/event" }.body!!
+
+    @Test
+    fun handOffTapIsRememberedAndAttached() {
+        val h = Harness(routes = eventOk)
+        h.client.start("straitlink://shop.example/p/42?strait_click=$tap")
+        h.t += day
+        assertTrue(h.client.trackEvent("purchase", value = 5.0, currency = "USD"))
+        assertEquals(tap, lastEvent(h).getString("clickId"))
+        val stored = JSONObject(h.storage.data["strait.lastTap"]!!)
+        assertEquals(tap, stored.getString("clickId"))
+        assertEquals(1_000_000L, stored.getLong("at"))
+    }
+
+    @Test
+    fun tapNotAttachedAfterSevenDays() {
+        val h = Harness(routes = eventOk)
+        h.client.start("straitlink://shop.example/p/42?strait_click=$tap")
+        h.t += 7 * day + 1
+        h.client.trackEvent("purchase")
+        assertFalse(lastEvent(h).has("clickId"))
+    }
+
+    @Test
+    fun explicitClickIdOverridesRememberedTap() {
+        val h = Harness(routes = eventOk)
+        h.client.start("straitlink://shop.example/p/42?strait_click=$tap")
+        h.client.trackEvent("purchase", clickId = other)
+        assertEquals(other, lastEvent(h).getString("clickId"))
+    }
+
+    @Test
+    fun noRememberedTapNoClickId() {
+        val h = Harness(routes = eventOk + ("/v1/match" to JSONObject().put("matched", false)))
+        h.client.start(null)
+        h.client.trackEvent("signup")
+        assertFalse(lastEvent(h).has("clickId"))
+    }
+
+    @Test
+    fun playReferrerTapIsRememberedOnDeferredInstall() {
+        val h = Harness("strait_link=lnk_7&strait_click=$tap", referrerHit + eventOk)
+        h.client.start(null)
+        h.client.trackEvent("purchase")
+        assertEquals(tap, lastEvent(h).getString("clickId"))
+    }
+
+    @Test
+    fun newerShortLinkOpenForgetsOlderTap() {
+        val h = Harness(routes = resolved + eventOk)
+        h.client.start("straitlink://shop.example/p/42?strait_click=$tap")
+        h.client.handleUrl("https://links.test/sale")
+        h.client.trackEvent("purchase")
+        assertFalse(lastEvent(h).has("clickId"))
+    }
+
+    @Test
+    fun brokenStorageNeverBlocksTheEvent() {
+        val broken = object : KeyValueStore {
+            override fun get(key: String): String? = throw java.io.IOException("io")
+            override fun set(key: String, value: String) = throw java.io.IOException("io")
+        }
+        val engine = FakeEngine(eventOk)
+        val client = StraitClient(StraitConfig(pk, endpoint, storage = broken, device = { device }, transport = engine, clock = { 1_000_000L }))
+        client.start("straitlink://x.example/?strait_click=$tap")
+        assertTrue(client.trackEvent("purchase"))
+        assertFalse(engine.calls.last { it.path == "/v1/event" }.body!!.has("clickId"))
+    }
 }

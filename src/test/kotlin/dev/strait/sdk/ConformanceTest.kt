@@ -30,7 +30,18 @@ class ConformanceTest {
         assertEquals(c.getLong("TRANSIENT_PAUSE_MS"), TRANSIENT_PAUSE_MS)
         assertEquals(c.getInt("OPEN_QUEUE_MAX"), OPEN_QUEUE_MAX)
         assertEquals(c.getLong("OPEN_QUEUE_MAX_AGE_MS"), OPEN_QUEUE_MAX_AGE_MS)
-        assertEquals(4, c.length(), "unexpected constants: $c")
+        assertEquals(c.getLong("ATTRIBUTION_WINDOW_MS"), ATTRIBUTION_WINDOW_MS)
+        assertEquals(5, c.length(), "unexpected constants: $c")
+    }
+
+    @Test
+    fun eventClickIdVectors() {
+        for (c in objects("eventClickId")) {
+            val stored = if (c.isNull("stored")) null else c.getString("stored")
+            val explicit = if (c.isNull("explicit")) null else c.getString("explicit")
+            val expected = if (c.isNull("expected")) null else c.getString("expected")
+            assertEquals(expected, eventClickId(stored, c.getLong("now"), explicit), c.getString("name"))
+        }
     }
 
     @Test

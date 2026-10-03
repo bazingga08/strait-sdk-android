@@ -1,4 +1,4 @@
-# strait-sdk-android (Kotlin) · v0.5.0
+# strait-sdk-android (Kotlin) · v0.6.0
 
 Deep linking for native Android, part of [Strait](../). It covers direct links
 (verified App Links and custom-scheme hand-offs), deferred links (Play Install
@@ -33,6 +33,7 @@ already ships it. Outside Android, add `org.json:json` yourself.
 | B12 `splitUrl` without `Uri`/`URI` (lower-cased, `+`/`%xx` decoded, fragment dropped) | ✓ | `Core.kt`, vectors |
 | B13 `trackEvent`, `reportFingerprint` (origin `app`), `compareFingerprint` | ✓ | `StraitClient` |
 | B14 every open reported once (`newOpenId` = event id), retry queue `strait.pendingOpens` (`pruneOpenQueue`, `shouldRetryReport`), `pendingOpenReports()` / `flushOpenReports()` | ✓ | `StraitClient`, `Core.kt`, vectors |
+| B15 conversion events carry the tap id (`strait.lastTap`, `eventClickId`, 7-day `ATTRIBUTION_WINDOW_MS`, explicit `clickId` override) | ✓ | `StraitClient`, `Core.kt`, vectors |
 
 Vectors: `src/test/resources/test-vectors.json` (signature) and
 `conformance-vectors.json` v2 (pure helpers). Both are byte-identical copies from
@@ -50,7 +51,7 @@ dependencyResolutionManagement {
 }
 
 // app/build.gradle.kts
-dependencies { implementation("com.github.bazingga08:strait-sdk-android:v0.5.0") }
+dependencies { implementation("com.github.bazingga08:strait-sdk-android:v0.6.0") }
 ```
 <!-- /brand:install -->
 
@@ -193,6 +194,12 @@ strait.reportFingerprint()    // POST /v1/debug/fingerprint, origin "app"
 strait.compareFingerprint()   // GET  /v1/debug/fingerprint → JSONObject
 strait.checkDeferred()        // re-run the deferred check (debug; ignores the once-per-install flag)
 ```
+
+`trackEvent` carries the tap id of the last link open that had one (a browser
+hand-off or a Play install) for 7 days, so the dashboard can place the revenue
+on that tap's channel and A/B variant (contract B15). A newer open by a verified
+short link replaces it (its tap id isn't known to the app, so the event then
+carries none). Pass `clickId = …` to set it yourself.
 
 HTTP defaults to `UrlConnectionTransport` (`HttpURLConnection`). To use OkHttp,
 implement `HttpTransport`: throw on network failure and return every HTTP
