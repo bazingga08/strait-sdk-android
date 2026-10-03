@@ -1,9 +1,10 @@
-# bridge-sdk-android (Kotlin) · v0.3.0
+# bridge-sdk-android (Kotlin) · v0.4.0
 
 Deep linking for native Android, part of [Bridge](../). It covers direct links
 (verified App Links and custom-scheme hand-offs), deferred links (Play Install
 Referrer, falling back to a fingerprint match), app-state labelling, analytics
-events and the fingerprint debug check.
+events, open reporting (every link open recorded once, with an offline retry
+queue) and the fingerprint debug check.
 
 The library is **pure JVM**: every Android piece (Intents, lifecycle, Install
 Referrer, SharedPreferences, display metrics, HTTP) is injected through
@@ -21,19 +22,20 @@ already ships it. Outside Android, add `org.json:json` yourself.
 | B1 publishableKey in every body (never appId or the secret key) | ✓ | `BridgeClient` |
 | B2 `browserScreenWidth = ceil(w - 0.001)` | ✓ | `Core.kt`, vectors |
 | B3 short link → `POST /v1/resolve {publishableKey,url,platform}`, engine `reason` reported | ✓ | `BridgeClient.handleUrl/start` |
-| B4 `classifyUrl` (custom scheme → https destination) | ✓ | `Core.kt`, vectors |
+| B4 `classifyUrl` (custom scheme → https destination; `bridge_click` removed via `takeClickId`, returned as `clickId`) | ✓ | `Core.kt`, vectors |
 | B5 `closed` / `AppStateTracker` (2000 / 1000 ms) | ✓ | `Core.kt`, vectors |
-| B6 deferred once per install (`bridge.deferredChecked`), skipped but marked when launched by a link | ✓ | `BridgeClient.start` |
-| B7 referrer `bridge_link` → `/v1/referrer`, else / on miss → `/v1/match` | ✓ | `BridgeClient` |
+| B6 deferred once per install (`bridge.deferredChecked`), skipped but marked when launched by a link; marked only once the engine answered (no answer / 429 / 5xx → `reason:"network"`, retried next launch); `checkDeferred()` sends no `openId` | ✓ | `BridgeClient.start` |
+| B7 referrer `bridge_link` → `/v1/referrer {linkId, clickId, openId, at}`, else / on miss → `/v1/match {…device, openId, at}` (same `openId`) | ✓ | `BridgeClient` |
 | B8 iOS fingerprint | n/a (Android). `/v1/match` sends the device fields | |
 | B9 one `LinkEvent` shape, replay to late subscribers, `onLinkStart` with the same id | ✓ | `BridgeClient` |
 | B10 never throws; network failure → `matched:false, reason:"network"` | ✓ | `BridgeClient` |
 | B11 JSON built by an encoder (org.json / escaped builders) | ✓ | `BridgeClient`, `Bridge.build*Body` |
 | B12 `splitUrl` without `Uri`/`URI` (lower-cased, `+`/`%xx` decoded, fragment dropped) | ✓ | `Core.kt`, vectors |
 | B13 `trackEvent`, `reportFingerprint` (origin `app`), `compareFingerprint` | ✓ | `BridgeClient` |
+| B14 every open reported once (`newOpenId` = event id), retry queue `bridge.pendingOpens` (`pruneOpenQueue`, `shouldRetryReport`), `pendingOpenReports()` / `flushOpenReports()` | ✓ | `BridgeClient`, `Core.kt`, vectors |
 
 Vectors: `src/test/resources/test-vectors.json` (signature) and
-`conformance-vectors.json` (pure helpers). Both are byte-identical copies from
+`conformance-vectors.json` v2 (pure helpers). Both are byte-identical copies from
 `shared-spec`, so don't edit them here.
 
 ## Android integration
@@ -114,6 +116,30 @@ class MainActivity : AppCompatActivity() {
 `LinkEvent` fields: `id, kind (direct|deferred), route (app_link|custom_scheme|install_referrer|fingerprint),
 appState (closed|background|foreground), matched, reason, rawUrl, url, path, params, linkId, ms, at`.
 `onLink` replays past events to late subscribers. Both `onLink` and `onLinkStart` return an unsubscribe function.
+
+### What Bridge records automatically (no extra code)
+
+Every time a link opens the app, the SDK reports it once (contract B14):
+
+| How the app opened | Reported via | Joined to |
+|---|---|---|
+| Verified link tapped in WhatsApp, Gmail, Messages… | `/v1/resolve` (the lookup is the report) | the link; also counted as a tap |
+| Browser handed off to the app (`yourapp://…`) | `/v1/open` | the exact tap (`bridge_click`, removed before your app sees the URL) |
+| First open after a Play install | `/v1/referrer` | the exact tap that sent the user to the store |
+| First open with no Play referrer link | `/v1/match` | the matched tap |
+| Your own https links | `/v1/open` | host + path only (never the query) |
+
+Reports that can't be sent (offline, server busy) are saved in `storage` under
+`bridge.pendingOpens` and retried on the next `start`, whenever
+`onAppState(ACTIVE)` is called, and after any report that gets through, for up
+to 7 days (max 100). The engine de-duplicates by open id (`LinkEvent.id`), so
+nothing is counted twice. Navigation never waits for a report: `onLink` fires
+before it is sent. The first launch of an install is marked as such, so
+dashboards can tell **new users** (installed and opened) from **existing
+users** (already had the app). The deferred check is only marked done once the
+server answered, so an offline first launch is retried on the next launch.
+`bridge.pendingOpenReports()` (count) and `bridge.flushOpenReports()` (send
+now) are blocking; call them off the main thread.
 
 ### 3. Play Install Referrer (`com.android.installreferrer:installreferrer`)
 

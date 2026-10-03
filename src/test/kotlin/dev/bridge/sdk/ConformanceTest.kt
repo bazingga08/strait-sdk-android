@@ -4,10 +4,11 @@ import org.json.JSONArray
 import org.json.JSONObject
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-/** shared-spec/conformance-vectors.json: every case, every function (B2, B4, B5, B7, B12). */
+/** shared-spec/conformance-vectors.json: every case, every function (B2, B4, B5, B7, B12, B14). */
 class ConformanceTest {
     private val v: JSONObject by lazy {
         JSONObject(this::class.java.getResourceAsStream("/conformance-vectors.json")!!.bufferedReader().readText())
@@ -27,6 +28,9 @@ class ConformanceTest {
         val c = v.getJSONObject("constants")
         assertEquals(c.getLong("RESUME_WINDOW_MS"), RESUME_WINDOW_MS)
         assertEquals(c.getLong("TRANSIENT_PAUSE_MS"), TRANSIENT_PAUSE_MS)
+        assertEquals(c.getInt("OPEN_QUEUE_MAX"), OPEN_QUEUE_MAX)
+        assertEquals(c.getLong("OPEN_QUEUE_MAX_AGE_MS"), OPEN_QUEUE_MAX_AGE_MS)
+        assertEquals(4, c.length(), "unexpected constants: $c")
     }
 
     @Test
@@ -62,6 +66,52 @@ class ConformanceTest {
     }
 
     @Test
+    fun referrerClickVectors() {
+        for (c in objects("referrerClick")) {
+            val input = if (c.isNull("input")) null else c.getString("input")
+            val expected = if (c.isNull("expected")) null else c.getString("expected")
+            assertEquals(expected, parseBridgeClick(input), "referrer=$input")
+        }
+    }
+
+    @Test
+    fun takeClickIdVectors() {
+        for (c in objects("takeClickId")) {
+            val input = c.getString("input")
+            val e = c.getJSONObject("expected")
+            val expected = TakenClickId(e.getString("url"), if (e.isNull("clickId")) null else e.getString("clickId"))
+            assertEquals(expected, takeClickId(input), input)
+        }
+    }
+
+    @Test
+    fun openQueueVectors() {
+        for (c in objects("openQueue")) {
+            val q = c.getJSONArray("queue").let { a -> (0 until a.length()).map { a.getJSONObject(it) } }
+            val got = pruneOpenQueue(q, c.getLong("now")) { it.getLong("at") }.map { it.getString("openId") }
+            val expected = c.getJSONArray("expected").let { a -> (0 until a.length()).map { a.getString(it) } }
+            assertEquals(expected, got, c.getString("name"))
+        }
+    }
+
+    @Test
+    fun retryVectors() {
+        for (c in objects("retry")) {
+            val status = if (c.isNull("status")) null else c.getInt("status")
+            assertEquals(c.getBoolean("expected"), shouldRetryReport(status), "status=$status")
+        }
+    }
+
+    @Test
+    fun newOpenIdShape() {
+        val id = newOpenId(1_800_000_000_000)
+        assertTrue(Regex("^o_[a-z0-9]+_[a-z0-9]{12}$").matches(id), id)
+        assertTrue(id.startsWith("o_${1_800_000_000_000L.toString(36)}_"), id)
+        assertEquals("o_${1_800_000_000_000L.toString(36)}_aaaaaaaaaaaa", newOpenId(1_800_000_000_000) { 0.0 })
+        assertEquals("o_${1_800_000_000_000L.toString(36)}_999999999999", newOpenId(1_800_000_000_000) { 0.9999 })
+    }
+
+    @Test
     fun linkHostVectors() {
         for (c in objects("linkHosts")) {
             val extra = c.getJSONArray("linkHosts").let { a -> List(a.length()) { a.getString(it) } }
@@ -81,9 +131,12 @@ class ConformanceTest {
             }
             val e = c.getJSONObject("expected")
             val expected = if (e.getBoolean("needsResolve")) {
+                assertFalse(e.has("clickId"), raw)
                 ClassifiedUrl(e.getString("route"), true)
             } else {
-                ClassifiedUrl(e.getString("route"), false, e.getString("url"), e.getString("path"), params(e.getJSONObject("params")))
+                assertTrue(e.has("clickId"), "clickId present (maybe null) on $raw")
+                ClassifiedUrl(e.getString("route"), false, e.getString("url"), e.getString("path"), params(e.getJSONObject("params")),
+                    if (e.isNull("clickId")) null else e.getString("clickId"))
             }
             assertEquals(expected, got, raw)
         }

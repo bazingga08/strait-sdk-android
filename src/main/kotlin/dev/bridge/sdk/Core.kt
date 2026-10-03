@@ -100,14 +100,54 @@ fun normalizeLinkHosts(endpoint: String, linkHosts: List<String> = emptyList()):
 }
 
 /** The bridge_link id inside a Play Install Referrer string, or null. */
-fun parseBridgeLink(referrer: String?): String? {
+fun parseBridgeLink(referrer: String?): String? = referrerParam(referrer, "bridge_link")
+
+/**
+ * The tap id (bridge_click) inside a Play Install Referrer string, or null.
+ * Joins the install to the exact tap that sent the user to the store.
+ */
+fun parseBridgeClick(referrer: String?): String? =
+    referrerParam(referrer, "bridge_click")?.takeIf { CLICK_ID.matches(it) }
+
+private fun referrerParam(referrer: String?, key: String): String? {
     if (referrer.isNullOrEmpty()) return null
     for (pair in referrer.split('&')) {
         val i = pair.indexOf('=')
-        if (i < 0 || pair.substring(0, i) != "bridge_link") continue
+        if (i < 0 || pair.substring(0, i) != key) continue
         return decode(pair.substring(i + 1)).ifEmpty { null }
     }
     return null
+}
+
+/** A tap id as Bridge issues it (uuid); anything else is ignored. */
+private val CLICK_ID =
+    Regex("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", RegexOption.IGNORE_CASE)
+
+/** Result of [takeClickId]: the URL without its tap id, and the tap id (or null). */
+data class TakenClickId(val url: String, val clickId: String?)
+
+/**
+ * Remove every `bridge_click` parameter from a URL's query, keeping the rest
+ * of the URL byte-for-byte (fragment included). Returns the cleaned URL and
+ * the tap id (null when absent or malformed). The app never sees the tap id.
+ */
+fun takeClickId(raw: String): TakenClickId {
+    val s = raw.trim()
+    val hash = s.indexOf('#')
+    val beforeHash = if (hash < 0) s else s.substring(0, hash)
+    val frag = if (hash < 0) "" else s.substring(hash)
+    val q = beforeHash.indexOf('?')
+    if (q < 0) return TakenClickId(s, null)
+    var clickId: String? = null
+    val kept = beforeHash.substring(q + 1).split('&').filter { pair ->
+        val i = pair.indexOf('=')
+        if (decode(if (i < 0) pair else pair.substring(0, i)) != "bridge_click") return@filter true
+        val v = decode(if (i < 0) "" else pair.substring(i + 1))
+        if (CLICK_ID.matches(v)) clickId = v.lowercase()
+        false
+    }
+    val query = kept.joinToString("&")
+    return TakenClickId(beforeHash.substring(0, q) + (if (query.isNotEmpty()) "?$query" else "") + frag, clickId)
 }
 
 /** How the app received a link (`route` on [LinkEvent]). */
@@ -120,7 +160,7 @@ object LinkRoute {
 
 /**
  * Result of [classifyUrl]. When [needsResolve] is true the URL is a Bridge
- * short link and [url]/[path]/[params] are null; ask /v1/resolve.
+ * short link and [url]/[path]/[params]/[clickId] are null; ask /v1/resolve.
  */
 data class ClassifiedUrl(
     val route: String,
@@ -128,6 +168,8 @@ data class ClassifiedUrl(
     val url: String? = null,
     val path: String? = null,
     val params: Map<String, String>? = null,
+    /** Tap id from a Bridge hand-off (removed from url/params), else null. */
+    val clickId: String? = null,
 )
 
 /**
@@ -135,23 +177,50 @@ data class ClassifiedUrl(
  * - https on a Bridge link host -> a short link; ask /v1/resolve for the destination.
  * - other https (a verified link on the customer's own site) -> it IS the destination.
  * - yourapp://host/path (browser hand-off) -> destination https://host/path.
+ * A `bridge_click` tap id is removed from the destination and returned apart.
  * Returns null for anything that isn't a URL.
  */
 fun classifyUrl(raw: String, linkHosts: List<String>): ClassifiedUrl? {
-    val p = splitUrl(raw) ?: return null
-    val isWeb = p.scheme == "https" || p.scheme == "http"
-    if (isWeb && linkHosts.any { it.lowercase() == p.host }) {
+    val p0 = splitUrl(raw) ?: return null
+    val isWeb = p0.scheme == "https" || p0.scheme == "http"
+    if (isWeb && linkHosts.any { it.lowercase() == p0.host }) {
         return ClassifiedUrl(LinkRoute.APP_LINK, needsResolve = true)
     }
-    val trimmed = raw.trim()
-    val url = if (isWeb) trimmed else SCHEME_RE.replaceFirst(trimmed, "https://")
+    val (clean, clickId) = takeClickId(raw)
+    val p = splitUrl(clean)!!
+    val url = if (isWeb) clean else SCHEME_RE.replaceFirst(clean, "https://")
     return ClassifiedUrl(
         route = if (isWeb) LinkRoute.APP_LINK else LinkRoute.CUSTOM_SCHEME,
         needsResolve = false,
         url = url,
         path = p.path,
         params = p.params,
+        clickId = clickId,
     )
+}
+
+/** Open reports waiting to be sent are kept at most this long... */
+const val OPEN_QUEUE_MAX_AGE_MS: Long = 7L * 24 * 60 * 60 * 1000
+
+/** ...and at most this many (oldest dropped first). */
+const val OPEN_QUEUE_MAX: Int = 100
+
+/**
+ * Prune a pending-report queue: drop reports older than [OPEN_QUEUE_MAX_AGE_MS]
+ * (by their `at`), then keep the newest [OPEN_QUEUE_MAX]. Order is kept.
+ */
+fun <T> pruneOpenQueue(queue: List<T>, now: Long, at: (T) -> Long): List<T> =
+    queue.filter { now - at(it) <= OPEN_QUEUE_MAX_AGE_MS }.takeLast(OPEN_QUEUE_MAX)
+
+/** Whether a failed report should be kept for retry: no answer (null), 429 or 5xx. */
+fun shouldRetryReport(status: Int?): Boolean = status == null || status == 429 || status >= 500
+
+/** A unique id for one link open (the engine de-duplicates retries by it). */
+fun newOpenId(now: Long, random: () -> Double = Math::random): String {
+    val alphabet = "abcdefghijklmnopqrstuvwxyz0123456789"
+    val r = StringBuilder(12)
+    repeat(12) { r.append(alphabet[kotlin.math.floor(random() * 36).toInt()]) }
+    return "o_${now.toString(36)}_$r"
 }
 
 /** A link arriving this soon after the app came back to the front came "from background". */

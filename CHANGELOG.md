@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.4.0 (2026-10-03)
+
+Report every link open exactly once (shared-spec/SDK-CONTRACT.md B14, plus the
+B4/B6/B7 revisions). Shared vectors are now `conformance-vectors.json` v2.
+
+- Every open gets an id from `newOpenId` (`o_<base36 ms>_<12 × [a-z0-9]>`),
+  which is also `LinkEvent.id` (was `evt_<ms>_<n>`).
+- Short links send `openId`, `appState`, `firstLaunch` and `at` with
+  `/v1/resolve`. If the reply lacks `recorded: true`, the open is reported via
+  `/v1/open`.
+- Custom-scheme hand-offs and your own https links are reported via
+  `POST /v1/open` after the event is emitted, so navigation never waits.
+- A `bridge_click` tap id is removed from the destination (`takeClickId`) and
+  sent as `clickId`. `classifyUrl` now returns `clickId`.
+- Reports that get no answer, 429 or 5xx are saved under `bridge.pendingOpens`
+  in `storage` and retried on start, on `onAppState(ACTIVE)` and after any
+  successful report (pruned to 7 days / 100). New `pendingOpenReports()` and
+  `flushOpenReports()`.
+- Deferred: `/v1/referrer` now sends `clickId` (`parseBridgeClick`), `openId`
+  and `at`; `/v1/match` sends the same `openId` and `at`. The once-per-install
+  flag is set only once the engine answered (no answer / 429 / 5xx → `network`,
+  retried next launch). `checkDeferred()` sends no `openId`.
+- New pure helpers: `parseBridgeClick`, `takeClickId`, `pruneOpenQueue`,
+  `shouldRetryReport`, `newOpenId`, `OPEN_QUEUE_MAX`, `OPEN_QUEUE_MAX_AGE_MS`.
+
 ## 0.3.0 (2026-10-03)
 
 Parity with the React Native SDK (shared-spec/SDK-CONTRACT.md B1–B13).
