@@ -1,4 +1,4 @@
-package dev.bridge.sdk
+package dev.strait.sdk
 
 import org.json.JSONObject
 import kotlin.test.Test
@@ -12,7 +12,7 @@ class BodyTest {
     @Test
     fun matchBodyCarriesPublishableKeyAndDevice() {
         val body = JSONObject(
-            Bridge.buildMatchBody(pk, DeviceFields(411, 2.625, "en", "Asia/Kolkata")),
+            Strait.buildMatchBody(pk, DeviceFields(411, 2.625, "en", "Asia/Kolkata")),
         )
         assertEquals(pk, body.getString("publishableKey"))
         assertEquals("android", body.getString("platform"))
@@ -26,7 +26,7 @@ class BodyTest {
     fun referrerBodyEscapesHostileLinkId() {
         // The referrer comes from a click URL anyone can craft.
         val hostile = "abc\",\"publishableKey\":\"bk_pub_live_attacker\\\n"
-        val body = JSONObject(Bridge.buildReferrerBody(pk, hostile))
+        val body = JSONObject(Strait.buildReferrerBody(pk, hostile))
         assertEquals(hostile, body.getString("linkId"))
         assertEquals(pk, body.getString("publishableKey"))
     }

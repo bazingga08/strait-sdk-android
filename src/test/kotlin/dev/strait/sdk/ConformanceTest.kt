@@ -1,4 +1,4 @@
-package dev.bridge.sdk
+package dev.strait.sdk
 
 import org.json.JSONArray
 import org.json.JSONObject
@@ -61,7 +61,7 @@ class ConformanceTest {
         for (c in objects("referrer")) {
             val input = if (c.isNull("input")) null else c.getString("input")
             val expected = if (c.isNull("expected")) null else c.getString("expected")
-            assertEquals(expected, parseBridgeLink(input), "referrer=$input")
+            assertEquals(expected, parseStraitLink(input), "referrer=$input")
         }
     }
 
@@ -70,7 +70,7 @@ class ConformanceTest {
         for (c in objects("referrerClick")) {
             val input = if (c.isNull("input")) null else c.getString("input")
             val expected = if (c.isNull("expected")) null else c.getString("expected")
-            assertEquals(expected, parseBridgeClick(input), "referrer=$input")
+            assertEquals(expected, parseStraitClick(input), "referrer=$input")
         }
     }
 

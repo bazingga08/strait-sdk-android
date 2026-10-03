@@ -1,4 +1,4 @@
-package dev.bridge.sdk
+package dev.strait.sdk
 
 import org.json.JSONObject
 import java.net.URI
@@ -9,8 +9,8 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-/** Port of sdk-react-native/test/bridge.test.ts with a fake engine + clock. */
-class BridgeClientTest {
+/** Port of sdk-react-native/test/strait.test.ts with a fake engine + clock. */
+class StraitClientTest {
     private val pk = "bk_pub_test_appowner01"
     private val endpoint = "https://links.test"
     private val device = DeviceFields(411, 2.625, "en", "Asia/Kolkata")
@@ -36,8 +36,8 @@ class BridgeClientTest {
     ) {
         var t = 1_000_000L
         val engine = FakeEngine(routes)
-        val client = BridgeClient(
-            BridgeConfig(
+        val client = StraitClient(
+            StraitConfig(
                 publishableKey = pk,
                 endpoint = endpoint,
                 storage = storage,
@@ -138,7 +138,7 @@ class BridgeClientTest {
     @Test
     fun customSchemeCarriesDestinationNoNetwork() {
         val h = Harness()
-        h.client.start("bridgelink://shop.example/p/42?color=red")
+        h.client.start("straitlink://shop.example/p/42?color=red")
         val e = h.events.first()
         assertEquals("custom_scheme", e.route)
         assertEquals("closed", e.appState)
@@ -180,7 +180,7 @@ class BridgeClientTest {
     @Test
     fun lateSubscribersGetReplay() {
         val h = Harness()
-        h.client.start("bridgelink://shop.example/cart")
+        h.client.start("straitlink://shop.example/cart")
         val late = mutableListOf<LinkEvent>()
         h.client.onLink { late += it }
         assertEquals(1, late.size)
@@ -205,7 +205,7 @@ class BridgeClientTest {
         val got = mutableListOf<LinkEvent>()
         val off = h.client.onLink { got += it }
         off()
-        h.client.handleUrl("bridgelink://shop.example/cart")
+        h.client.handleUrl("straitlink://shop.example/cart")
         assertTrue(got.isEmpty())
         assertEquals(1, h.events.size)
     }
@@ -216,7 +216,7 @@ class BridgeClientTest {
         h.client.onLink { throw IllegalStateException("app bug") }
         val got = mutableListOf<LinkEvent>()
         h.client.onLink { got += it }
-        h.client.handleUrl("bridgelink://shop.example/cart")
+        h.client.handleUrl("straitlink://shop.example/cart")
         assertEquals(1, got.size)
     }
 
@@ -224,14 +224,14 @@ class BridgeClientTest {
     fun stopIgnoresNewUrls() {
         val h = Harness()
         h.client.stop()
-        h.client.handleUrl("bridgelink://shop.example/cart")
+        h.client.handleUrl("straitlink://shop.example/cart")
         assertTrue(h.events.isEmpty())
     }
 
     @Test
     fun customDomainLinkHostIsResolved() {
         val engine = FakeEngine(resolved)
-        val client = BridgeClient(BridgeConfig(pk, endpoint, linkHosts = listOf("https://go.brand.com", "Short.Brand.com"),
+        val client = StraitClient(StraitConfig(pk, endpoint, linkHosts = listOf("https://go.brand.com", "Short.Brand.com"),
             device = { device }, transport = engine))
         val got = mutableListOf<LinkEvent>()
         client.onLink { got += it }
@@ -245,7 +245,7 @@ class BridgeClientTest {
 
     @Test
     fun firstLaunchInstallReferrer() {
-        val h = Harness(initialReferrer = "utm_source=google-play&bridge_link=lnk_7", routes = referrerHit)
+        val h = Harness(initialReferrer = "utm_source=google-play&strait_link=lnk_7", routes = referrerHit)
         h.client.start(null)
         val e = h.events.first()
         assertEquals("deferred", e.kind)
@@ -264,11 +264,11 @@ class BridgeClientTest {
     @Test
     fun deferredRunsOncePerInstall() {
         val storage = MemoryStore()
-        Harness("bridge_link=lnk_7", referrerHit, storage).client.start(null)
-        val second = Harness("bridge_link=lnk_7", referrerHit, storage)
+        Harness("strait_link=lnk_7", referrerHit, storage).client.start(null)
+        val second = Harness("strait_link=lnk_7", referrerHit, storage)
         second.client.start(null)
         assertTrue(second.events.none { it.kind == "deferred" })
-        assertEquals("1", storage.get("bridge.deferredChecked"))
+        assertEquals("1", storage.get("strait.deferredChecked"))
     }
 
     @Test
@@ -292,7 +292,7 @@ class BridgeClientTest {
 
     @Test
     fun referrerMissFallsBackToFingerprintMatch() {
-        val h = Harness("bridge_link=lnk_gone", mapOf(
+        val h = Harness("strait_link=lnk_gone", mapOf(
             "/v1/referrer" to JSONObject().put("matched", false),
             "/v1/match" to JSONObject().put("matched", true).put("longUrl", "https://shop.example/x?a=1").put("linkId", "lnk_9"),
         ))
@@ -307,7 +307,7 @@ class BridgeClientTest {
     @Test
     fun throwingReferrerProviderStillMatches() {
         val engine = FakeEngine(mapOf("/v1/match" to JSONObject().put("matched", false)))
-        val client = BridgeClient(BridgeConfig(pk, endpoint, installReferrer = { error("no play services") },
+        val client = StraitClient(StraitConfig(pk, endpoint, installReferrer = { error("no play services") },
             device = { device }, transport = engine))
         val e = client.checkDeferred()
         assertEquals("no_match", e.reason)
@@ -316,15 +316,15 @@ class BridgeClientTest {
     @Test
     fun firstLaunchOpenedByLinkSkipsDeferred() {
         val storage = MemoryStore()
-        val h = Harness("bridge_link=lnk_7", referrerHit, storage)
-        h.client.start("bridgelink://shop.example/cart")
+        val h = Harness("strait_link=lnk_7", referrerHit, storage)
+        h.client.start("straitlink://shop.example/cart")
         assertEquals(listOf("direct"), h.events.map { it.kind })
-        assertEquals("1", storage.get("bridge.deferredChecked"))
+        assertEquals("1", storage.get("strait.deferredChecked"))
     }
 
     @Test
     fun deferredLinkStartHasSameId() {
-        val h = Harness("bridge_link=lnk_7", referrerHit)
+        val h = Harness("strait_link=lnk_7", referrerHit)
         val starts = mutableListOf<LinkStart>()
         h.client.onLinkStart { starts += it }
         h.client.start(null)
@@ -371,7 +371,7 @@ class BridgeClientTest {
     @Test
     fun hostileReferrerCannotInjectFields() {
         val hostile = "abc\",\"publishableKey\":\"bk_pub_live_attacker"
-        val h = Harness("bridge_link=" + java.net.URLEncoder.encode(hostile, "UTF-8"), referrerHit)
+        val h = Harness("strait_link=" + java.net.URLEncoder.encode(hostile, "UTF-8"), referrerHit)
         h.client.start(null)
         val body = h.engine.calls.first { it.path == "/v1/referrer" }.body!!
         assertEquals(hostile, body.getString("linkId"))
@@ -383,7 +383,7 @@ class BridgeClientTest {
         val engine = object : HttpTransport {
             override fun request(url: String, method: String, jsonBody: String?) = HttpResponse(502, "<html>bad gateway</html>")
         }
-        val client = BridgeClient(BridgeConfig(pk, endpoint, device = { device }, transport = engine))
+        val client = StraitClient(StraitConfig(pk, endpoint, device = { device }, transport = engine))
         val got = mutableListOf<LinkEvent>()
         client.onLink { got += it }
         client.handleUrl("https://links.test/sale")

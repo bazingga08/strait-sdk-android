@@ -12,7 +12,7 @@ directly; `scripts/brand.mjs` applies it to the README install block and LICENSE
 
 ## One-time owner setup
 
-1. **Pick the brand.** From `bridge/`: `shared-spec/scripts/rename-brand.sh … --final --apply`.
+1. **Pick the brand.** From the workspace root: `shared-spec/scripts/rename-brand.sh … --final --apply`.
    If the GitHub repo is renamed or moved to an org, the coordinates change with it
    (`com.github.<org>:<repo>`), so do that before the first public tag.
 2. **Make the GitHub repo public** (JitPack's free tier only builds public repos).

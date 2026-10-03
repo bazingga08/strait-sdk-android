@@ -1,4 +1,4 @@
-package dev.bridge.sdk
+package dev.strait.sdk
 
 /**
  * Device fields collected on-device (the Android app supplies these from
@@ -34,7 +34,7 @@ fun interface HttpPoster {
 
 /**
  * Resolve the deferred deep link. Android deterministic path (Play Install
- * Referrer with bridge_link) is preferred; otherwise the fingerprint /v1/match.
+ * Referrer with strait_link) is preferred; otherwise the fingerprint /v1/match.
  * The full Android wrapper (Context, InstallReferrerClient, display metrics) is
  * provided in the app layer; this core stays pure + testable.
  *
@@ -42,7 +42,7 @@ fun interface HttpPoster {
  * `bk_pub_test_…`) from Dashboard → Get started. It is safe to ship in apps;
  * never pass your secret key (`bk_live_…`).
  */
-object Bridge {
+object Strait {
     /** JSON body for POST /v1/match (device-fingerprint match). */
     fun buildMatchBody(publishableKey: String, device: DeviceFields): String =
         "{\"publishableKey\":${jsonString(publishableKey)},\"platform\":\"android\"," +

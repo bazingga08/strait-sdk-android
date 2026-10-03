@@ -1,4 +1,4 @@
-package dev.bridge.sdk
+package dev.strait.sdk
 
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
@@ -99,15 +99,15 @@ fun normalizeLinkHosts(endpoint: String, linkHosts: List<String> = emptyList()):
     return out
 }
 
-/** The bridge_link id inside a Play Install Referrer string, or null. */
-fun parseBridgeLink(referrer: String?): String? = referrerParam(referrer, "bridge_link")
+/** The strait_link id inside a Play Install Referrer string, or null. */
+fun parseStraitLink(referrer: String?): String? = referrerParam(referrer, "strait_link")
 
 /**
- * The tap id (bridge_click) inside a Play Install Referrer string, or null.
+ * The tap id (strait_click) inside a Play Install Referrer string, or null.
  * Joins the install to the exact tap that sent the user to the store.
  */
-fun parseBridgeClick(referrer: String?): String? =
-    referrerParam(referrer, "bridge_click")?.takeIf { CLICK_ID.matches(it) }
+fun parseStraitClick(referrer: String?): String? =
+    referrerParam(referrer, "strait_click")?.takeIf { CLICK_ID.matches(it) }
 
 private fun referrerParam(referrer: String?, key: String): String? {
     if (referrer.isNullOrEmpty()) return null
@@ -119,7 +119,7 @@ private fun referrerParam(referrer: String?, key: String): String? {
     return null
 }
 
-/** A tap id as Bridge issues it (uuid); anything else is ignored. */
+/** A tap id as Strait issues it (uuid); anything else is ignored. */
 private val CLICK_ID =
     Regex("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", RegexOption.IGNORE_CASE)
 
@@ -127,7 +127,7 @@ private val CLICK_ID =
 data class TakenClickId(val url: String, val clickId: String?)
 
 /**
- * Remove every `bridge_click` parameter from a URL's query, keeping the rest
+ * Remove every `strait_click` parameter from a URL's query, keeping the rest
  * of the URL byte-for-byte (fragment included). Returns the cleaned URL and
  * the tap id (null when absent or malformed). The app never sees the tap id.
  */
@@ -141,7 +141,7 @@ fun takeClickId(raw: String): TakenClickId {
     var clickId: String? = null
     val kept = beforeHash.substring(q + 1).split('&').filter { pair ->
         val i = pair.indexOf('=')
-        if (decode(if (i < 0) pair else pair.substring(0, i)) != "bridge_click") return@filter true
+        if (decode(if (i < 0) pair else pair.substring(0, i)) != "strait_click") return@filter true
         val v = decode(if (i < 0) "" else pair.substring(i + 1))
         if (CLICK_ID.matches(v)) clickId = v.lowercase()
         false
@@ -159,7 +159,7 @@ object LinkRoute {
 }
 
 /**
- * Result of [classifyUrl]. When [needsResolve] is true the URL is a Bridge
+ * Result of [classifyUrl]. When [needsResolve] is true the URL is a Strait
  * short link and [url]/[path]/[params]/[clickId] are null; ask /v1/resolve.
  */
 data class ClassifiedUrl(
@@ -168,16 +168,16 @@ data class ClassifiedUrl(
     val url: String? = null,
     val path: String? = null,
     val params: Map<String, String>? = null,
-    /** Tap id from a Bridge hand-off (removed from url/params), else null. */
+    /** Tap id from a Strait hand-off (removed from url/params), else null. */
     val clickId: String? = null,
 )
 
 /**
  * What a URL handed to the app means (B4):
- * - https on a Bridge link host -> a short link; ask /v1/resolve for the destination.
+ * - https on a Strait link host -> a short link; ask /v1/resolve for the destination.
  * - other https (a verified link on the customer's own site) -> it IS the destination.
  * - yourapp://host/path (browser hand-off) -> destination https://host/path.
- * A `bridge_click` tap id is removed from the destination and returned apart.
+ * A `strait_click` tap id is removed from the destination and returned apart.
  * Returns null for anything that isn't a URL.
  */
 fun classifyUrl(raw: String, linkHosts: List<String>): ClassifiedUrl? {

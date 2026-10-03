@@ -1,4 +1,4 @@
-package dev.bridge.sdk
+package dev.strait.sdk
 
 import org.json.JSONArray
 import org.json.JSONObject
@@ -10,16 +10,16 @@ import java.util.concurrent.Executor
 import java.util.concurrent.atomic.AtomicBoolean
 
 /*
- * The Bridge link client: a pure-JVM port of sdk-react-native/src/bridge.ts.
+ * The Strait link client: a pure-JVM port of sdk-react-native/src/strait.ts.
  * Everything Android-specific (Intents, ProcessLifecycleOwner,
  * InstallReferrerClient, SharedPreferences, display metrics) is injected
- * through BridgeConfig, so the logic runs and is tested on a plain JVM.
+ * through StraitConfig, so the logic runs and is tested on a plain JVM.
  * See README.md for the Android wiring.
  */
 
 /** One link the app received, for every case (B9). */
 data class LinkEvent(
-    /** Unique per open (`newOpenId`); also the id Bridge records this open under. */
+    /** Unique per open (`newOpenId`); also the id Strait records this open under. */
     val id: String,
     /** "direct" = the app was opened by a link; "deferred" = link tapped before install. */
     val kind: String,
@@ -106,10 +106,10 @@ class UrlConnectionTransport(
     }
 }
 
-class BridgeConfig(
+class StraitConfig(
     /** Workspace publishable key (bk_pub_live_...), Dashboard -> Get started. Never the secret key. */
     val publishableKey: String,
-    /** Your Bridge link host, e.g. https://go.yourbrand.com */
+    /** Your Strait link host, e.g. https://go.yourbrand.com */
     val endpoint: String,
     /** Extra hosts that serve your short links (custom domains), e.g. "https://go.brand.com". */
     val linkHosts: List<String> = emptyList(),
@@ -130,14 +130,14 @@ class BridgeConfig(
     val clock: () -> Long = System::currentTimeMillis,
 )
 
-private const val DEFERRED_FLAG = "bridge.deferredChecked"
-private const val QUEUE_KEY = "bridge.pendingOpens"
+private const val DEFERRED_FLAG = "strait.deferredChecked"
+private const val QUEUE_KEY = "strait.pendingOpens"
 
 /**
- * Bridge link client (contract B1-B14). Never throws from link handling.
- * Listeners are called on the thread that resolved the link (the [BridgeConfig.executor]).
+ * Strait link client (contract B1-B14). Never throws from link handling.
+ * Listeners are called on the thread that resolved the link (the [StraitConfig.executor]).
  */
-class BridgeClient(private val config: BridgeConfig) {
+class StraitClient(private val config: StraitConfig) {
     private val base = config.endpoint.trimEnd('/')
     private val linkHosts: List<String> = normalizeLinkHosts(base, config.linkHosts)
     private val events = ArrayList<LinkEvent>()
@@ -420,13 +420,13 @@ class BridgeClient(private val config: BridgeConfig) {
         return try {
             if (config.platform == "android") {
                 val referrer = try { config.installReferrer() } catch (_: Exception) { null }
-                val linkId = parseBridgeLink(referrer)
+                val linkId = parseStraitLink(referrer)
                 if (linkId != null) {
                     val body = JSONObject()
                         .put("publishableKey", config.publishableKey)
                         .put("linkId", linkId)
                         .put("platform", "android")
-                    parseBridgeClick(referrer)?.let { body.put("clickId", it) }
+                    parseStraitClick(referrer)?.let { body.put("clickId", it) }
                     val json = answered("/v1/referrer", tag(body))
                     if (json.opt("matched") == true) {
                         val dest = destination(str(json, "longUrl"))

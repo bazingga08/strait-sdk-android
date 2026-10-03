@@ -1,4 +1,4 @@
-package dev.bridge.sdk
+package dev.strait.sdk
 
 import org.json.JSONObject
 import java.net.URI
@@ -57,8 +57,8 @@ class OpensTest {
         executor: java.util.concurrent.Executor = java.util.concurrent.Executor { it.run() },
     ) {
         var t = 1_800_000_000_000L
-        val client = BridgeClient(
-            BridgeConfig(
+        val client = StraitClient(
+            StraitConfig(
                 publishableKey = pk,
                 endpoint = endpoint,
                 storage = storage,
@@ -81,7 +81,7 @@ class OpensTest {
     private val noMatch = Reply.Status(body = JSONObject().put("matched", false).put("matchMethod", "none"))
 
     /** Not the first launch. */
-    private fun returning() = MemoryStore().apply { set("bridge.deferredChecked", "1") }
+    private fun returning() = MemoryStore().apply { set("strait.deferredChecked", "1") }
 
     private fun assertBody(expected: Map<String, Any>, body: JSONObject) {
         for ((k, v) in expected) assertEquals(v, body.opt(k), "body.$k in $body")
@@ -94,7 +94,7 @@ class OpensTest {
         val h = Harness(FakeEngine("/v1/open" to accepted), returning())
         h.client.start(null)
         h.setState(AppLifecycleState.BACKGROUND); h.t += 5000; h.setState(AppLifecycleState.ACTIVE); h.t += 200
-        h.client.handleUrl("bridgelink://shop.example/p/42?color=red&bridge_click=$click")
+        h.client.handleUrl("straitlink://shop.example/p/42?color=red&strait_click=$click")
         val e = h.events.last()
         assertEquals("custom_scheme", e.route)
         assertEquals("https://shop.example/p/42?color=red", e.url)
@@ -117,7 +117,7 @@ class OpensTest {
             val h = Harness(FakeEngine("/v1/open" to Reply.Hang(release)), returning(), executor = pool)
             val got = CountDownLatch(1)
             h.client.onLink { got.countDown() }
-            h.client.start("bridgelink://shop.example/p/1?bridge_click=$click")
+            h.client.start("straitlink://shop.example/p/1?strait_click=$click")
             assertTrue(got.await(5, TimeUnit.SECONDS), "event emitted while the report hangs")
             assertEquals(1, h.events.size)
             assertEquals("https://shop.example/p/1", h.events[0].url)
@@ -185,7 +185,7 @@ class OpensTest {
         val engine = FakeEngine("/v1/open" to Reply.Status(503))
         val h = Harness(engine, returning())
         h.client.start(null)
-        h.client.handleUrl("bridgelink://a.b/1")
+        h.client.handleUrl("straitlink://a.b/1")
         assertEquals(1, h.client.pendingOpenReports())
         engine.routes["/v1/open"] = Reply.Status(429)
         h.client.flushOpenReports()
@@ -200,8 +200,8 @@ class OpensTest {
         val storage = returning()
         val first = Harness(FakeEngine("/v1/open" to Reply.Offline), storage)
         first.client.start(null)
-        first.client.handleUrl("bridgelink://a.b/1")
-        first.client.handleUrl("bridgelink://a.b/2")
+        first.client.handleUrl("straitlink://a.b/1")
+        first.client.handleUrl("straitlink://a.b/2")
         assertEquals(2, first.client.pendingOpenReports())
         first.client.stop()
 
@@ -216,9 +216,9 @@ class OpensTest {
         val engine = FakeEngine("/v1/open" to Reply.Offline)
         val h = Harness(engine, returning())
         h.client.start(null)
-        h.client.handleUrl("bridgelink://a.b/old")
+        h.client.handleUrl("straitlink://a.b/old")
         engine.routes["/v1/open"] = accepted
-        h.client.handleUrl("bridgelink://a.b/new")
+        h.client.handleUrl("straitlink://a.b/new")
         assertEquals(0, h.client.pendingOpenReports())
         val old = engine.of("/v1/open").filter { it.body!!.getString("url") == "https://a.b/old" }
         assertEquals(1, old.map { it.body!!.getString("openId") }.toSet().size)
@@ -228,7 +228,7 @@ class OpensTest {
     fun everyOpenHasItsOwnId() {
         val h = Harness(FakeEngine("/v1/open" to accepted), returning())
         h.client.start(null)
-        for (i in 0 until 5) h.client.handleUrl("bridgelink://a.b/$i")
+        for (i in 0 until 5) h.client.handleUrl("straitlink://a.b/$i")
         assertEquals(5, h.events.map { it.id }.toSet().size)
     }
 
@@ -241,14 +241,14 @@ class OpensTest {
         assertEquals(true, h.engine.of("/v1/resolve")[0].body!!.opt("firstLaunch"))
         assertEquals(0, h.engine.of("/v1/referrer").size)
         assertEquals(0, h.engine.of("/v1/match").size)
-        assertEquals("1", h.storage.get("bridge.deferredChecked"))
+        assertEquals("1", h.storage.get("strait.deferredChecked"))
     }
 
     @Test
     fun playReferrerSendsTapIdAndOpenId() {
         val hit = Reply.Status(body = JSONObject().put("matched", true).put("longUrl", "https://shop.example/p/42")
             .put("linkId", "lnk_42").put("matchMethod", "install_referrer"))
-        val h = Harness(FakeEngine("/v1/referrer" to hit), referrer = "utm_source=google-play&bridge_link=lnk_42&bridge_click=$click")
+        val h = Harness(FakeEngine("/v1/referrer" to hit), referrer = "utm_source=google-play&strait_link=lnk_42&strait_click=$click")
         h.client.start(null)
         val e = h.events[0]
         assertBody(mapOf("linkId" to "lnk_42", "clickId" to click, "openId" to e.id, "at" to e.at, "platform" to "android"),
@@ -275,12 +275,12 @@ class OpensTest {
         first.client.start(null)
         assertEquals("deferred", first.events[0].kind)
         assertEquals("network", first.events[0].reason)
-        assertNull(storage.get("bridge.deferredChecked"))
+        assertNull(storage.get("strait.deferredChecked"))
 
         val second = Harness(FakeEngine("/v1/match" to noMatch), storage)
         second.client.start(null)
         assertEquals(1, second.engine.of("/v1/match").size)
-        assertEquals("1", storage.get("bridge.deferredChecked"))
+        assertEquals("1", storage.get("strait.deferredChecked"))
 
         val third = Harness(FakeEngine("/v1/match" to noMatch), storage)
         third.client.start(null)
@@ -293,7 +293,7 @@ class OpensTest {
         val h = Harness(FakeEngine("/v1/match" to Reply.Status(502)), storage)
         h.client.start(null)
         assertEquals("network", h.events[0].reason)
-        assertNull(storage.get("bridge.deferredChecked"))
+        assertNull(storage.get("strait.deferredChecked"))
     }
 
     @Test
@@ -318,7 +318,7 @@ class OpensTest {
             override fun set(key: String, value: String) = throw java.io.IOException("full")
         }
         fun client(engine: FakeEngine, store: KeyValueStore) =
-            BridgeClient(BridgeConfig(pk, endpoint, storage = store, device = { device }, transport = engine))
+            StraitClient(StraitConfig(pk, endpoint, storage = store, device = { device }, transport = engine))
 
         val engine = FakeEngine("/v1/match" to noMatch, "/v1/resolve" to resolved)
         client(engine, broken).start(null)

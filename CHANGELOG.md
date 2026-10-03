@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.5.0 (2026-10-03)
+
+**Renamed to Strait** (breaking, clean break; no aliases for the old names).
+
+- Kotlin package `dev.bridge.sdk` → `dev.strait.sdk`; `BridgeClient` → `StraitClient`,
+  `BridgeConfig` → `StraitConfig`, `object Bridge` → `object Strait`,
+  `parseBridgeLink` → `parseStraitLink`, `parseBridgeClick` → `parseStraitClick`.
+- Wire params: the Play referrer / hand-off params are now `strait_link` and
+  `strait_click` only.
+- Storage keys: `strait.deferredChecked`, `strait.pendingOpens` (old values are ignored).
+- Artifact / repo: `com.github.bazingga08:strait-sdk-android`; brand.json is final
+  (Strait, https://usestrait.com, strait.to, Strait Technologies).
+- Shared vectors (`conformance-vectors.json`) follow the rename.
+
 ## 0.4.0 (2026-10-03)
 
 Report every link open exactly once (shared-spec/SDK-CONTRACT.md B14, plus the

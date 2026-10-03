@@ -1,9 +1,9 @@
-package dev.bridge.sdk
+package dev.strait.sdk
 
 import kotlin.math.roundToInt
 
 /**
- * Bridge deferred-match signature — Kotlin port of shared-spec/RECIPE.md.
+ * Strait deferred-match signature — Kotlin port of shared-spec/RECIPE.md.
  * MUST be byte-identical to the JS reference + every other SDK (golden vectors).
  *
  * Kotlin `Int` IS 32-bit and overflows by wrapping, exactly like JS's `h |= 0`,
