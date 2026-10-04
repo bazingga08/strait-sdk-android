@@ -119,7 +119,7 @@ class StraitConfig(
     val installReferrer: () -> String? = { null },
     /** "android" for the Android SDK. */
     val platform: String = "android",
-    /** Device fields for the fingerprint match (use browserScreenWidth for screenWidth). */
+    /** Device fields for the fingerprint match (use portraitScreenWidth for screenWidth, B17). */
     val device: () -> DeviceFields,
     val transport: HttpTransport = UrlConnectionTransport(),
     /**

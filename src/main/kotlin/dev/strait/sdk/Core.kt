@@ -20,6 +20,15 @@ import kotlin.math.ceil
  */
 fun browserScreenWidth(logicalWidth: Double): Int = ceil(logicalWidth - 0.001).toInt()
 
+/**
+ * The `screenWidth` device field (B17): the screen's SHORTER side, as a browser
+ * reports it. Safari's `screen.width` at the tap is the portrait width whatever
+ * the orientation, so an app first launched in landscape (844x390) still reports 390.
+ * On Android: `portraitScreenWidth(m.widthPixels / m.density, m.heightPixels / m.density)`.
+ */
+fun portraitScreenWidth(logicalWidth: Double, logicalHeight: Double): Int =
+    browserScreenWidth(minOf(logicalWidth, logicalHeight))
+
 data class SplitUrl(
     val scheme: String,
     val host: String,

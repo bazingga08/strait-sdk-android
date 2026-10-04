@@ -62,6 +62,14 @@ class ConformanceTest {
     }
 
     @Test
+    fun portraitScreenWidthVectors() {
+        for (c in objects("portraitScreenWidth")) {
+            assertEquals(c.getInt("expected"), portraitScreenWidth(c.getDouble("width"), c.getDouble("height")),
+                "${c.get("width")}x${c.get("height")}")
+        }
+    }
+
+    @Test
     fun splitUrlVectors() {
         for (c in objects("splitUrl")) {
             val input = c.getString("input")

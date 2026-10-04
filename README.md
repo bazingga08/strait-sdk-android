@@ -1,4 +1,4 @@
-# strait-sdk-android (Kotlin) · v0.7.0
+# strait-sdk-android (Kotlin) · v0.7.1
 
 Deep linking for native Android, part of [Strait](../). It covers direct links
 (verified App Links and custom-scheme hand-offs), deferred links (Play Install
@@ -35,6 +35,7 @@ already ships it. Outside Android, add `org.json:json` yourself.
 | B14 every open reported once (`newOpenId` = event id), retry queue `strait.pendingOpens` (`pruneOpenQueue`, `shouldRetryReport`), `pendingOpenReports()` / `flushOpenReports()` | ✓ | `StraitClient`, `Core.kt`, vectors |
 | B15 conversion events carry the tap id (`strait.lastTap`, `eventClickId`, 7-day `ATTRIBUTION_WINDOW_MS`, explicit `clickId` override) | ✓ | `StraitClient`, `Core.kt`, vectors |
 | B16 every attributed open supplies the tap id (`/v1/resolve`, `/v1/match`, `/v1/referrer` reply `clickId` → `strait.lastTap`, `replyClickId`) | ✓ | `StraitClient`, `Core.kt`, vectors v4 |
+| B17 `screenWidth` is the portrait (shorter-side) width: `portraitScreenWidth(w, h)` | ✓ | `Core.kt`, README `device`, vectors v5 |
 
 Vectors: `src/test/resources/test-vectors.json` (signature) and
 `conformance-vectors.json` v2 (pure helpers). Both are byte-identical copies from
@@ -52,7 +53,7 @@ dependencyResolutionManagement {
 }
 
 // app/build.gradle.kts
-dependencies { implementation("com.github.bazingga08:strait-sdk-android:v0.7.0") }
+dependencies { implementation("com.github.bazingga08:strait-sdk-android:v0.7.1") }
 ```
 <!-- /brand:install -->
 
@@ -83,7 +84,7 @@ class App : Application() {
             device = {
                 val m = resources.displayMetrics
                 DeviceFields(
-                    screenWidth = browserScreenWidth(m.widthPixels / m.density.toDouble()),
+                    screenWidth = portraitScreenWidth(m.widthPixels / m.density.toDouble(), m.heightPixels / m.density.toDouble()),
                     pixelRatio = m.density.toDouble(),
                     language = java.util.Locale.getDefault().toLanguageTag(),
                     timezone = java.util.TimeZone.getDefault().id,

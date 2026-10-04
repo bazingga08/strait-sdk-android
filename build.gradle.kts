@@ -8,7 +8,7 @@ val brand = groovy.json.JsonSlurper().parse(file("brand.json")) as Map<*, *>
 val repoUrl = "https://github.com/${brand["githubOwner"]}/${rootProject.name}"
 
 group = "com.github.${brand["githubOwner"]}"
-version = "0.7.0"
+version = "0.7.1"
 // JitPack builds from a tag and passes its own coordinates (com.github.<owner>:<repo>:<tag>).
 if (System.getenv("JITPACK") == "true") {
     group = System.getenv("GROUP") ?: group
