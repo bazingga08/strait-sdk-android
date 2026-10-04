@@ -38,9 +38,9 @@ fun interface HttpPoster {
  * The full Android wrapper (Context, InstallReferrerClient, display metrics) is
  * provided in the app layer; this core stays pure + testable.
  *
- * `publishableKey` is the workspace publishable key (`bk_pub_live_…` /
+ * `publishableKey` is the workspace publishable key (`st_pub_live_…` /
  * `bk_pub_test_…`) from Dashboard → Get started. It is safe to ship in apps;
- * never pass your secret key (`bk_live_…`).
+ * never pass your secret key (`st_live_…`).
  */
 object Strait {
     /** JSON body for POST /v1/match (device-fingerprint match). */

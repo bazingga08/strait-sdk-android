@@ -107,7 +107,7 @@ class UrlConnectionTransport(
 }
 
 class StraitConfig(
-    /** Workspace publishable key (bk_pub_live_...), Dashboard -> Get started. Never the secret key. */
+    /** Workspace publishable key (st_pub_live_...), Dashboard -> Get started. Never the secret key. */
     val publishableKey: String,
     /** Your Strait link host, e.g. https://go.yourbrand.com */
     val endpoint: String,

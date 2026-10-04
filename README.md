@@ -73,8 +73,8 @@ class App : Application() {
         super.onCreate()
         val prefs = getSharedPreferences("strait", MODE_PRIVATE)
         strait = StraitClient(StraitConfig(
-            publishableKey = "bk_pub_live_…",                       // Dashboard → Get started
-            endpoint = "https://bridge-redirect-engine.onrender.com",
+            publishableKey = "st_pub_live_…",                       // Dashboard → Get started
+            endpoint = "https://<your-handle>.strait.link",
             linkHosts = listOf("https://go.yourbrand.com"),          // custom short-link domains
             storage = object : KeyValueStore {
                 override fun get(key: String) = prefs.getString(key, null)
@@ -207,7 +207,7 @@ HTTP defaults to `UrlConnectionTransport` (`HttpURLConnection`). To use OkHttp,
 implement `HttpTransport`: throw on network failure and return every HTTP
 status as an `HttpResponse`.
 
-**Publishable key:** Dashboard → Get started → Publishable key (`bk_pub_live_…`).
+**Publishable key:** Dashboard → Get started → Publishable key (`st_pub_live_…`).
 It's safe to include in your app. Never put your secret key (`bk_live_…`) in an app.
 
 ## Lower-level helpers (unchanged)
