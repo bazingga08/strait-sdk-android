@@ -1,6 +1,6 @@
 # strait-sdk-android (Kotlin) · v0.7.1
 
-Deep linking for native Android, part of [Strait](../). It covers direct links
+Deep linking for native Android, part of [Strait](https://straitlink.in). It covers direct links
 (verified App Links and custom-scheme hand-offs), deferred links (Play Install
 Referrer, falling back to a fingerprint match), app-state labelling, analytics
 events, open reporting (every link open recorded once, with an offline retry
@@ -15,7 +15,7 @@ shared vectors. It is a 1:1 port of the React Native reference
 Dependencies: Kotlin stdlib only. `org.json` is `compileOnly` because Android
 already ships it. Outside Android, add `org.json:json` yourself.
 
-## Contract behaviours ([SDK-CONTRACT](../shared-spec/SDK-CONTRACT.md))
+## Contract behaviours (Strait SDK contract)
 
 | # | Status | Where |
 |---|---|---|
@@ -146,7 +146,7 @@ Every time a link opens the app, the SDK reports it once (contract B14):
 | Browser handed off to the app (`yourapp://…`) | `/v1/open` | the exact tap (`strait_click`, removed before your app sees the URL) |
 | First open after a Play install | `/v1/referrer` | the exact tap that sent the user to the store |
 | First open with no Play referrer link | `/v1/match` | the matched tap |
-| Your own https links | `/v1/open` | host + path only (never the query) |
+| Your own https links | `/v1/open` | the URL (tap id removed); the server keeps host + path only, never the query |
 
 Reports that can't be sent (offline, server busy) are saved in `storage` under
 `strait.pendingOpens` and retried on the next `start`, whenever
@@ -208,7 +208,7 @@ implement `HttpTransport`: throw on network failure and return every HTTP
 status as an `HttpResponse`.
 
 **Publishable key:** Dashboard → Get started → Publishable key (`st_pub_live_…`).
-It's safe to include in your app. Never put your secret key (`bk_live_…`) in an app.
+It's safe to include in your app. Never put your secret key (`st_live_…`) in an app.
 
 ## Lower-level helpers (unchanged)
 

@@ -39,7 +39,7 @@ fun interface HttpPoster {
  * provided in the app layer; this core stays pure + testable.
  *
  * `publishableKey` is the workspace publishable key (`st_pub_live_…` /
- * `bk_pub_test_…`) from Dashboard → Get started. It is safe to ship in apps;
+ * `st_pub_test_…`) from Dashboard → Get started. It is safe to ship in apps;
  * never pass your secret key (`st_live_…`).
  */
 object Strait {
