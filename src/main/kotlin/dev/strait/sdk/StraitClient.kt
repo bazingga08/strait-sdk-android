@@ -146,6 +146,7 @@ class StraitClient(private val config: StraitConfig) {
     private val startListeners = CopyOnWriteArrayList<(LinkStart) -> Unit>()
     private val tracker = AppStateTracker()
     private val queueLock = Any()
+    private val tapLock = Any()
     private val flushing = AtomicBoolean(false)
     @Volatile private var stopped = false
 
@@ -158,6 +159,7 @@ class StraitClient(private val config: StraitConfig) {
         stopped = false
         val initial = initialUrl?.takeIf { it.isNotBlank() }
         config.executor.execute {
+            safely { dropStaleTap() }
             safely {
                 // Unreadable storage counts as "already checked": never risk a stale
                 // deferred jump on every launch. Write failures are ignored (never throw).
@@ -250,7 +252,8 @@ class StraitClient(private val config: StraitConfig) {
         if (value != null) body.put("value", value)
         if (currency != null) body.put("currency", currency)
         if (linkId != null) body.put("linkId", linkId)
-        val stored = runCatching { config.storage.get(TAP_KEY) }.getOrNull()
+        val stored = synchronized(tapLock) { runCatching { config.storage.get(TAP_KEY) }.getOrNull() }
+        if (staleTap(stored, config.clock())) dropStaleTap() // B18: delete, don't just ignore
         eventClickId(stored, config.clock(), clickId)?.let { body.put("clickId", it) }
         call("POST", "/v1/event", body).first.ok
     } catch (_: Exception) {
@@ -297,8 +300,16 @@ class StraitClient(private val config: StraitConfig) {
     // sent with conversion events. An attributed open without a known tap id
     // (short link, fingerprint match) forgets it: the newer touch wins.
     // Storage failures are ignored.
-    private fun noteTap(clickId: String?, at: Long) {
+    private fun noteTap(clickId: String?, at: Long) = synchronized(tapLock) {
         runCatching { config.storage.set(TAP_KEY, if (clickId != null) rememberTap(clickId, at) else "") }
+    }
+
+    /** B18: delete an expired remembered tap instead of only ignoring it. Re-read
+     *  under the lock so a newer tap written meanwhile is never lost. */
+    private fun dropStaleTap() = synchronized(tapLock) {
+        runCatching {
+            if (staleTap(config.storage.get(TAP_KEY), config.clock())) config.storage.set(TAP_KEY, "")
+        }
     }
 
     // --- open reports (B14): every open is reported once; failures are saved
@@ -306,7 +317,11 @@ class StraitClient(private val config: StraitConfig) {
 
     private fun readQueue(): List<JSONObject> = try {
         val a = JSONArray(config.storage.get(QUEUE_KEY) ?: "[]")
-        (0 until a.length()).mapNotNull { a.optJSONObject(it) }
+        // B18: reports saved by an older SDK may hold a full URL; strip it here
+        // so the next write leaves no query or fragment on the device.
+        (0 until a.length()).mapNotNull { a.optJSONObject(it) }.onEach { r ->
+            (r.opt("url") as? String)?.let { r.put("url", reportUrl(it)) }
+        }
     } catch (_: Exception) {
         emptyList()
     }
@@ -366,7 +381,7 @@ class StraitClient(private val config: StraitConfig) {
     ): JSONObject {
         val r = JSONObject()
             .put("openId", id).put("kind", "direct").put("route", route).put("appState", appState)
-            .put("platform", config.platform).put("url", url).put("matched", matched)
+            .put("platform", config.platform).put("url", reportUrl(url)).put("matched", matched) // B18
             .put("firstLaunch", firstLaunch).put("at", at)
         if (clickId != null) r.put("clickId", clickId)
         if (linkId != null) r.put("linkId", linkId)
@@ -394,7 +409,7 @@ class StraitClient(private val config: StraitConfig) {
         return try {
             val body = JSONObject()
                 .put("publishableKey", config.publishableKey)
-                .put("url", raw)
+                .put("url", reportUrl(raw)) // B18: only host + path (+ utm_source) leave the device
                 .put("platform", config.platform)
                 .put("openId", id)
                 .put("appState", appState)

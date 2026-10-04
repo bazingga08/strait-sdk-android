@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.7.2
+
+- Privacy hardening (shared-spec/SDK-CONTRACT.md B18): the URL sent to `/v1/open` and
+  `/v1/resolve` and saved in the offline retry queue (`strait.pendingOpens`) no longer
+  carries the query string or fragment, except the first `utm_source` pair, which the
+  engine uses for channel attribution. Reports saved by an older version are stripped the
+  next time the queue is read. `LinkEvent` (what your app routes on) is unchanged.
+- An expired remembered tap id (`strait.lastTap`, older than 7 days) is now deleted at
+  `start()` and by `trackEvent`, not only ignored.
+- New `Core.kt` functions: `reportUrl`, `staleTap` (conformance vectors v6).
+- Gradle wrapper: `distributionSha256Sum` pins the official Gradle 9.8.0 checksum.
+
 ## 0.7.1
 
 - Report the portrait screen width so a first launch in landscape still matches the tap

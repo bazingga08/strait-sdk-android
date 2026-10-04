@@ -55,6 +55,19 @@ class ConformanceTest {
     }
 
     @Test
+    fun reportUrlVectors() {
+        for (c in objects("reportUrl")) assertEquals(c.getString("expected"), reportUrl(c.getString("input")), c.getString("input"))
+    }
+
+    @Test
+    fun staleTapVectors() {
+        for (c in objects("staleTap")) {
+            val stored = if (c.isNull("stored")) null else c.getString("stored")
+            assertEquals(c.getBoolean("expected"), staleTap(stored, c.getLong("now")), c.getString("name"))
+        }
+    }
+
+    @Test
     fun screenWidth() {
         for (c in objects("screenWidth")) {
             assertEquals(c.getInt("expected"), browserScreenWidth(c.getDouble("logical")), "logical=${c.get("logical")}")

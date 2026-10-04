@@ -104,7 +104,7 @@ class OpensTest {
         assertEquals(1, h.engine.of("/v1/open").size)
         assertBody(mapOf(
             "publishableKey" to pk, "openId" to e.id, "kind" to "direct", "route" to "custom_scheme",
-            "appState" to "background", "platform" to "android", "url" to "https://shop.example/p/42?color=red",
+            "appState" to "background", "platform" to "android", "url" to "https://shop.example/p/42", // B18: no query
             "clickId" to click, "matched" to true, "firstLaunch" to false,
         ), h.engine.of("/v1/open")[0].body!!)
     }
@@ -329,5 +329,76 @@ class OpensTest {
         val e3 = FakeEngine("/v1/resolve" to resolved)
         client(e3, writeOnly).start("https://links.test/sale") // must not throw
         assertEquals(1, e3.of("/v1/resolve").size)
+    }
+
+    // --- B18: no query or fragment leaves the device or reaches storage -----
+
+    @Test
+    fun b18OpenReportKeepsOnlyHostPathAndUtmSource() {
+        val h = Harness(FakeEngine("/v1/open" to accepted), returning())
+        h.client.start(null)
+        h.client.handleUrl("https://shop.example/p/42?email=jo%40x.com&utm_source=sms#reset-token")
+        val e = h.events.last()
+        assertEquals("https://shop.example/p/42?email=jo%40x.com&utm_source=sms#reset-token", e.url)
+        assertEquals(mapOf("email" to "jo@x.com", "utm_source" to "sms"), e.params)
+        assertEquals("https://shop.example/p/42?utm_source=sms", h.engine.of("/v1/open")[0].body!!.getString("url"))
+    }
+
+    @Test
+    fun b18FailedLookupQueuedAndResolvedWithoutQueryOrFragment() {
+        val h = Harness(FakeEngine("/v1/resolve" to Reply.Offline, "/v1/open" to Reply.Offline), returning())
+        h.client.start(null)
+        h.client.handleUrl("https://links.test/sale?session=s3cr3t&utm_source=wa#frag")
+        assertEquals("https://links.test/sale?utm_source=wa", h.engine.of("/v1/resolve")[0].body!!.getString("url"))
+        val saved = h.storage.get("strait.pendingOpens")!!
+        assertFalse(saved.contains("s3cr3t"), saved)
+        assertEquals("https://links.test/sale?utm_source=wa", org.json.JSONArray(saved).getJSONObject(0).getString("url"))
+    }
+
+    @Test
+    fun b18LegacyQueuedReportsStrippedBeforeSendOrSave() {
+        val storage = returning()
+        storage.set("strait.pendingOpens", org.json.JSONArray().put(JSONObject()
+            .put("openId", "o_old_aaaaaaaaaaaa").put("kind", "direct").put("route", "app_link").put("appState", "closed")
+            .put("platform", "android").put("url", "https://shop.example/p?token=abc#x").put("matched", true)
+            .put("firstLaunch", false).put("at", 1_800_000_000_000L - 1000)).toString())
+        val h = Harness(FakeEngine("/v1/open" to Reply.Offline), storage)
+        h.client.start(null)
+        h.client.flushOpenReports()
+        assertEquals("https://shop.example/p", h.engine.of("/v1/open")[0].body!!.getString("url"))
+        assertFalse(storage.get("strait.pendingOpens")!!.contains("token"))
+    }
+
+    @Test
+    fun b18ExpiredTapDeletedAtStart() {
+        val storage = returning()
+        storage.set("strait.lastTap", JSONObject().put("clickId", click).put("at", 1_800_000_000_000L - 8L * 24 * 3600 * 1000).toString())
+        val h = Harness(FakeEngine(), storage)
+        h.client.start(null)
+        assertEquals("", storage.get("strait.lastTap"))
+    }
+
+    @Test
+    fun b18TapExpiringWhileRunningDeletedByTrackEventAndNotSent() {
+        val storage = returning()
+        storage.set("strait.lastTap", JSONObject().put("clickId", click).put("at", 1_800_000_000_000L).toString())
+        val h = Harness(FakeEngine("/v1/event" to accepted), storage)
+        h.client.start(null)
+        assertTrue(storage.get("strait.lastTap")!!.contains(click)) // still valid at start
+        h.t += 7L * 24 * 3600 * 1000 + 1
+        h.client.trackEvent("purchase")
+        assertFalse(h.engine.of("/v1/event")[0].body!!.has("clickId"))
+        assertEquals("", storage.get("strait.lastTap"))
+    }
+
+    @Test
+    fun b18ValidTapKeptAndSent() {
+        val storage = returning()
+        storage.set("strait.lastTap", JSONObject().put("clickId", click).put("at", 1_800_000_000_000L - 1000).toString())
+        val h = Harness(FakeEngine("/v1/event" to accepted), storage)
+        h.client.start(null)
+        h.client.trackEvent("purchase")
+        assertEquals(click, h.engine.of("/v1/event")[0].body!!.getString("clickId"))
+        assertTrue(storage.get("strait.lastTap")!!.contains(click))
     }
 }

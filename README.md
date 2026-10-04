@@ -1,4 +1,4 @@
-# strait-sdk-android (Kotlin) · v0.7.1
+# strait-sdk-android (Kotlin) · v0.7.2
 
 Deep linking for native Android, part of [Strait](https://straitlink.in). It covers direct links
 (verified App Links and custom-scheme hand-offs), deferred links (Play Install
@@ -36,6 +36,7 @@ already ships it. Outside Android, add `org.json:json` yourself.
 | B15 conversion events carry the tap id (`strait.lastTap`, `eventClickId`, 7-day `ATTRIBUTION_WINDOW_MS`, explicit `clickId` override) | ✓ | `StraitClient`, `Core.kt`, vectors |
 | B16 every attributed open supplies the tap id (`/v1/resolve`, `/v1/match`, `/v1/referrer` reply `clickId` → `strait.lastTap`, `replyClickId`) | ✓ | `StraitClient`, `Core.kt`, vectors v4 |
 | B17 `screenWidth` is the portrait (shorter-side) width: `portraitScreenWidth(w, h)` | ✓ | `Core.kt`, README `device`, vectors v5 |
+| B18 open reports and the retry queue carry no query or fragment (`reportUrl`: host + path, plus the first `utm_source`); an expired `strait.lastTap` is deleted (`staleTap`) | ✓ | `StraitClient`, `Core.kt`, vectors v6 |
 
 Vectors: `src/test/resources/test-vectors.json` (signature) and
 `conformance-vectors.json` v2 (pure helpers). Both are byte-identical copies from
@@ -53,7 +54,7 @@ dependencyResolutionManagement {
 }
 
 // app/build.gradle.kts
-dependencies { implementation("com.github.bazingga08:strait-sdk-android:v0.7.1") }
+dependencies { implementation("com.github.bazingga08:strait-sdk-android:v0.7.2") }
 ```
 <!-- /brand:install -->
 

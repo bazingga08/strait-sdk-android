@@ -249,6 +249,33 @@ fun eventClickId(stored: String?, now: Long, explicit: String? = null): String? 
 }
 
 /**
+ * True when the remembered tap ([stored], see [rememberTap]) is set but can no
+ * longer be used: unreadable, malformed, or opened more than
+ * [ATTRIBUTION_WINDOW_MS] before [now] (or after it). The SDK then deletes it
+ * instead of keeping it on the device (contract B18).
+ */
+fun staleTap(stored: String?, now: Long): Boolean = !stored.isNullOrEmpty() && eventClickId(stored, now) == null
+
+/**
+ * The URL the SDK reports to the engine (`/v1/open`, `/v1/resolve`) or saves in
+ * the open queue (contract B18): the query string and fragment are removed,
+ * except the first `utm_source` pair, kept byte for byte, because the engine
+ * reads it for channel attribution. The engine keeps nothing else from the
+ * query: it stores host + path only. The query is what sits before any '#',
+ * between the first and second '?'.
+ */
+fun reportUrl(url: String): String {
+    val noFragment = url.substringBefore('#')
+    val q = noFragment.indexOf('?')
+    if (q < 0) return noFragment
+    val base = noFragment.substring(0, q)
+    for (pair in noFragment.substring(q + 1).substringBefore('?').split('&')) {
+        if (pair.substringBefore('=') == "utm_source") return "$base?$pair"
+    }
+    return base
+}
+
+/**
  * The tap id to remember after an attributed open the engine answered
  * (contract B16): the reply's `clickId` when it is a valid tap id
  * (lower-cased); else [fallback] when valid (a tap id the SDK already knew,
