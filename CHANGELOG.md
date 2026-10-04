@@ -50,7 +50,7 @@
   `strait_click` only.
 - Storage keys: `strait.deferredChecked`, `strait.pendingOpens` (old values are ignored).
 - Artifact / repo: `com.github.bazingga08:strait-sdk-android`; brand.json is final
-  (Strait, https://usestrait.com, strait.link, Strait Technologies).
+  (Strait, https://usestrait.com, strait.link; the copyright holder is now "The Strait authors").
 - Shared vectors (`conformance-vectors.json`) follow the rename.
 
 ## 0.4.0 (2026-10-03)
