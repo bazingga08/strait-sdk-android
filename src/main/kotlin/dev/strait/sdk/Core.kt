@@ -239,6 +239,19 @@ fun eventClickId(stored: String?, now: Long, explicit: String? = null): String? 
     return if (age >= 0 && age <= ATTRIBUTION_WINDOW_MS) clickId.lowercase() else null
 }
 
+/**
+ * The tap id to remember after an attributed open the engine answered
+ * (contract B16): the reply's `clickId` when it is a valid tap id
+ * (lower-cased); else [fallback] when valid (a tap id the SDK already knew,
+ * e.g. the Play referrer's — so an older engine that returns none keeps B15);
+ * else null, which forgets the remembered tap (the newer touch wins).
+ */
+fun replyClickId(reply: Any?, fallback: String? = null): String? {
+    if (reply is String && CLICK_ID.matches(reply)) return reply.lowercase()
+    if (fallback != null && CLICK_ID.matches(fallback)) return fallback.lowercase()
+    return null
+}
+
 /** Whether a failed report should be kept for retry: no answer (null), 429 or 5xx. */
 fun shouldRetryReport(status: Int?): Boolean = status == null || status == 429 || status >= 500
 

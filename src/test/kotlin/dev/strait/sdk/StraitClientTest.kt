@@ -391,7 +391,7 @@ class StraitClientTest {
         assertNotNull(got.single().id)
     }
 
-    // --- conversion events carry the tap id (B15) ---------------------------
+    // --- conversion events carry the tap id (B15/B16) -----------------------
 
     private val tap = "3f2a9c1e-7b4d-4e8a-9c0f-1a2b3c4d5e6f"
     private val other = "11111111-2222-4333-8444-555555555555"
@@ -447,6 +447,48 @@ class StraitClientTest {
     @Test
     fun newerShortLinkOpenForgetsOlderTap() {
         val h = Harness(routes = resolved + eventOk)
+        h.client.start("straitlink://shop.example/p/42?strait_click=$tap")
+        h.client.handleUrl("https://links.test/sale")
+        h.client.trackEvent("purchase")
+        assertFalse(lastEvent(h).has("clickId"))
+    }
+
+    @Test
+    fun b16ShortLinkOpenRemembersTheReplyTapId() {
+        val reply = JSONObject(resolved["/v1/resolve"]!!.toString()).put("recorded", true).put("clickId", tap.uppercase())
+        val h = Harness(routes = eventOk + ("/v1/resolve" to reply))
+        h.client.start("straitlink://shop.example/p/42?strait_click=$other")
+        h.t += 1000
+        h.client.handleUrl("https://links.test/sale")
+        h.client.trackEvent("purchase")
+        assertEquals(tap, lastEvent(h).getString("clickId"))
+        val stored = JSONObject(h.storage.data["strait.lastTap"]!!)
+        assertEquals(tap, stored.getString("clickId"))
+        assertEquals(1_001_000L, stored.getLong("at"))
+    }
+
+    @Test
+    fun b16FingerprintMatchRemembersTheReplyTapId() {
+        val match = JSONObject().put("matched", true).put("longUrl", "https://shop.example/p/9").put("linkId", "lnk_9").put("clickId", tap)
+        val h = Harness(routes = eventOk + ("/v1/match" to match))
+        h.client.start(null)
+        h.client.trackEvent("purchase")
+        assertEquals(tap, lastEvent(h).getString("clickId"))
+    }
+
+    @Test
+    fun b16ReferrerReplyTapIdWinsOverTheParsedOne() {
+        val reply = JSONObject(referrerHit["/v1/referrer"]!!.toString()).put("clickId", tap)
+        val h = Harness("strait_link=lnk_7&strait_click=$other", eventOk + ("/v1/referrer" to reply))
+        h.client.start(null)
+        h.client.trackEvent("purchase")
+        assertEquals(tap, lastEvent(h).getString("clickId"))
+    }
+
+    @Test
+    fun b16MalformedReplyTapIdForgets() {
+        val reply = JSONObject(resolved["/v1/resolve"]!!.toString()).put("clickId", "nope")
+        val h = Harness(routes = eventOk + ("/v1/resolve" to reply))
         h.client.start("straitlink://shop.example/p/42?strait_click=$tap")
         h.client.handleUrl("https://links.test/sale")
         h.client.trackEvent("purchase")

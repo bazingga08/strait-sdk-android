@@ -405,7 +405,7 @@ class StraitClient(private val config: StraitConfig) {
             val reason = if (matched) null else (str(json, "reason") ?: str(json, "error"))
             val linkId = str(json, "linkId")
             val dest = destination(if (matched) str(json, "longUrl") else null)
-            if (matched) noteTap(null, t0)
+            if (matched) noteTap(replyClickId(json.opt("clickId")), t0)
             val e = emit(LinkEvent(id, "direct", LinkRoute.APP_LINK, appState, matched,
                 reason = reason, rawUrl = raw, url = dest.url, path = dest.path, params = dest.params,
                 linkId = linkId, ms = config.clock() - t0, at = t0))
@@ -449,7 +449,7 @@ class StraitClient(private val config: StraitConfig) {
                     clickId?.let { body.put("clickId", it) }
                     val json = answered("/v1/referrer", tag(body))
                     if (json.opt("matched") == true) {
-                        if (record) noteTap(clickId, t0)
+                        if (record) noteTap(replyClickId(json.opt("clickId"), clickId), t0)
                         val dest = destination(str(json, "longUrl"))
                         return emit(LinkEvent(id, "deferred", LinkRoute.INSTALL_REFERRER, AppStateAtLink.CLOSED, true,
                             url = dest.url, path = dest.path, params = dest.params,
@@ -461,7 +461,7 @@ class StraitClient(private val config: StraitConfig) {
             putDevice(body, config.device())
             val json = answered("/v1/match", tag(body))
             val matched = json.opt("matched") == true
-            if (record && matched) noteTap(null, t0)
+            if (record && matched) noteTap(replyClickId(json.opt("clickId")), t0)
             val dest = destination(if (matched) str(json, "longUrl") else null)
             emit(LinkEvent(id, "deferred", LinkRoute.FINGERPRINT, AppStateAtLink.CLOSED, matched,
                 reason = if (matched) null else "no_match", url = dest.url, path = dest.path, params = dest.params,

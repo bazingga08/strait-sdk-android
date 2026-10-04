@@ -45,6 +45,16 @@ class ConformanceTest {
     }
 
     @Test
+    fun replyClickIdVectors() {
+        for (c in objects("replyClickId")) {
+            val reply = if (c.isNull("reply")) null else c.get("reply")
+            val fallback = if (c.isNull("fallback")) null else c.getString("fallback")
+            val expected = if (c.isNull("expected")) null else c.getString("expected")
+            assertEquals(expected, replyClickId(reply, fallback), c.getString("name"))
+        }
+    }
+
+    @Test
     fun screenWidth() {
         for (c in objects("screenWidth")) {
             assertEquals(c.getInt("expected"), browserScreenWidth(c.getDouble("logical")), "logical=${c.get("logical")}")
