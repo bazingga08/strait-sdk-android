@@ -134,7 +134,9 @@ class MainActivity : AppCompatActivity() {
 ```
 
 `LinkEvent` fields: `id, kind (direct|deferred), route (app_link|custom_scheme|install_referrer|fingerprint),
-appState (closed|background|foreground), matched, reason, rawUrl, url, path, params, linkId, ms, at`.
+appState (closed|background|foreground), matched, reason, rawUrl, url, path, params, linkId, ms, at, referralCode`.
+`referralCode` (deferred links only) is the referral code the tap carried, when the engine sends one; referrals are
+a preview and not switched on yet (contract B21). Grant rewards from your server via the `referral.converted` webhook.
 `onLink` replays past events to late subscribers. Both `onLink` and `onLinkStart` return an unsubscribe function.
 
 ### What Strait records automatically (no extra code)

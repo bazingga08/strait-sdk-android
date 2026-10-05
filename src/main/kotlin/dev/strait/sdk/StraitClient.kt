@@ -40,6 +40,13 @@ data class LinkEvent(
     /** Time spent resolving, ms. */
     val ms: Long,
     val at: Long,
+    /**
+     * Deferred links only: the referral code the tap carried (the tap's
+     * `?strait_ref=`, else the link's `referralCode`), when the engine sends
+     * one. Who invited this install; reward them from your server (the
+     * `referral.converted` webhook). Referrals are a preview (contract B21).
+     */
+    val referralCode: String? = null,
 )
 
 /**
@@ -468,7 +475,8 @@ class StraitClient(private val config: StraitConfig) {
                         val dest = destination(str(json, "longUrl"))
                         return emit(LinkEvent(id, "deferred", LinkRoute.INSTALL_REFERRER, AppStateAtLink.CLOSED, true,
                             url = dest.url, path = dest.path, params = dest.params,
-                            linkId = str(json, "linkId") ?: linkId, ms = config.clock() - t0, at = t0))
+                            linkId = str(json, "linkId") ?: linkId, ms = config.clock() - t0, at = t0,
+                            referralCode = replyReferralCode(json.opt("referralCode"))))
                     }
                 }
             }
@@ -480,7 +488,8 @@ class StraitClient(private val config: StraitConfig) {
             val dest = destination(if (matched) str(json, "longUrl") else null)
             emit(LinkEvent(id, "deferred", LinkRoute.FINGERPRINT, AppStateAtLink.CLOSED, matched,
                 reason = if (matched) null else "no_match", url = dest.url, path = dest.path, params = dest.params,
-                linkId = str(json, "linkId"), ms = config.clock() - t0, at = t0))
+                linkId = str(json, "linkId"), ms = config.clock() - t0, at = t0,
+                referralCode = if (matched) replyReferralCode(json.opt("referralCode")) else null))
         } catch (_: Exception) {
             emit(LinkEvent(id, "deferred", LinkRoute.FINGERPRINT, AppStateAtLink.CLOSED, false, reason = "network",
                 ms = config.clock() - t0, at = t0))
