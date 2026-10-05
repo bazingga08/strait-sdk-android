@@ -77,7 +77,8 @@ https://straitlink.in/docs/troubleshooting/.
 
 - Test: `./gradlew test   # JDK 17` (must pass before any commit; check the exit code).
 - The match signature and the pure helpers are pinned by shared golden vectors
-  (`src/test/resources/*vectors*.json`): byte-identical copies live in every SDK and the engine. Never edit a vector file
+  (`src/test/resources/*vectors*.json`): byte-identical copies live in every app and web SDK (the signature vectors in the
+  engine too). Never edit a vector file
   here alone; vectors change only through `shared-spec/` and land in every repo together.
 - The package's public identity (name, scope, owner, domain) lives only in `brand.json`; change it with
   `shared-spec/scripts/rename-brand.sh` (all SDKs) or `node scripts/brand.mjs --write`.
