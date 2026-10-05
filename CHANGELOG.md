@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Referral codes (preview; shared-spec/proposals/referral-code.md, B21): a matched
+  deferred `LinkEvent` (Play referrer or `/v1/match`) carries `referralCode` when the
+  engine's reply has a valid one. New core function `replyReferralCode`.
+
 ## 0.7.2
 
 - Privacy hardening (shared-spec/SDK-CONTRACT.md B18): the URL sent to `/v1/open` and

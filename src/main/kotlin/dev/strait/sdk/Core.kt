@@ -288,6 +288,17 @@ fun replyClickId(reply: Any?, fallback: String? = null): String? {
     return null
 }
 
+private val REFERRAL_CODE = Regex("^[A-Za-z0-9_-]{1,64}$")
+
+/**
+ * The referral code in a matched deferred reply (`/v1/referrer`, `/v1/match`),
+ * or null (contract B21, proposal). Only a valid code (1-64 letters, digits,
+ * - or _) counts, kept exactly as sent; anything else, or an engine that
+ * sends no `referralCode`, gives null.
+ */
+fun replyReferralCode(reply: Any?): String? =
+    if (reply is String && REFERRAL_CODE.matches(reply)) reply else null
+
 /** Whether a failed report should be kept for retry: no answer (null), 429 or 5xx. */
 fun shouldRetryReport(status: Int?): Boolean = status == null || status == 429 || status >= 500
 
