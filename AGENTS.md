@@ -20,7 +20,7 @@ implementation("androidx.lifecycle:lifecycle-process:2.8.7")
 ```
 
 Manifest: a `singleTask` activity with an `autoVerify` intent filter for `https://<handle>.strait.link` and a
-second intent filter for the custom scheme (Quick start, step 5).
+second intent filter for the custom scheme (https://straitlink.in/docs/sdks/android/, step 4).
 
 ## Keys (the rule agents get wrong most)
 
