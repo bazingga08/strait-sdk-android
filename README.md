@@ -1,4 +1,9 @@
-# strait-sdk-android (Kotlin) · v0.7.2
+# Strait SDK for Android
+
+`strait-sdk-android` (Kotlin) · v0.7.2
+
+> **Availability:** Android deep links and deferred links: Live · SDK: Beta (installed from GitHub; not on Maven Central yet).
+> [Platform status](https://straitlink.in/platform-status/) · [Docs](https://straitlink.in/docs/)
 
 Deep linking for native Android, part of [Strait](https://straitlink.in). It covers direct links
 (verified App Links and custom-scheme hand-offs), deferred links (Play Install
