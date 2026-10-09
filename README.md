@@ -60,7 +60,7 @@ dependencyResolutionManagement {
 }
 
 // app/build.gradle.kts
-dependencies { implementation("com.github.bazingga08:strait-sdk-android:v0.7.2") }
+dependencies { implementation("com.github.bazingga08:strait-sdk-android:v0.7.3") }
 ```
 <!-- /brand:install -->
 
