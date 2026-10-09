@@ -28,13 +28,27 @@ second intent filter for the custom scheme (Quick start, step 5).
 - **Secret key** `st_live_…` (Dashboard → Settings → Secret keys): server only. Never put it in an app: anyone can extract it and change your links.
 - Never commit either key's real value to this repo, tests or examples. Use placeholders like `st_pub_live_…`.
 
+## Stop and ask the human
+
+These steps need a person with the account. Don't fake them, skip them or invent values; stop and ask.
+
+- **Signup / login:** creating the Strait workspace at https://app.straitlink.in and choosing its handle.
+- **Keys:** the real publishable key (Dashboard → Get started). Never ask for, read or paste the secret key into an app.
+- **Dashboard app settings:** Android package name and every SHA-256 signing fingerprint (including the Play App
+  Signing key from Play Console → App integrity), iPhone Team ID + bundle ID. The link domain's verification files
+  are built from these.
+- **Play upload:** building a signed release and uploading it to a Google Play testing track (needed to test
+  deferred links through Install Referrer).
+- **Registry coordinates:** never guess a Maven / JitPack coordinate or version. Use only the one in Install above
+  (it comes from `brand.json`); if it doesn't resolve, stop and ask. Don't substitute a similar-looking package.
+
 ## Receive links: the one pattern
 
 ```kotlin
 // Application.onCreate: create once
 links = StraitClient(StraitConfig(
     publishableKey = "st_pub_live_…",       // never the secret key
-    endpoint = "https://acme.strait.link",      // the workspace's link domain
+    endpoint = "https://<handle>.strait.link",  // the workspace's link domain
     storage = /* KeyValueStore over SharedPreferences */,
     installReferrer = { readInstallReferrer(this) },
     device = { DeviceFields(/* portraitScreenWidth(...), density, locale tag, TimeZone id */) },
@@ -52,7 +66,17 @@ the executor, never the main thread.
 
 ## Verify
 
-Run these; don't assume.
+Run these; don't assume. The loop: change config → check files → dry-run a tap → fix → repeat, then one real tap.
+
+```sh
+# 0. The verification files are right (public, no key). Want: android.status ok, with your package + SHA-256
+curl "https://strait.link/v1/tools/app-links?domain=<handle>.strait.link"
+
+# 0b. What a tap on a link would do, without recording it (secret key from your shell env, never from the app)
+curl "https://strait.link/v1/simulate?url=https%3A%2F%2F<handle>.strait.link%2Fsummer&ua=android" \
+  -H "Authorization: Bearer $STRAIT_SECRET_KEY"
+#    Want: "decision" and "location" pointing at your app. Dashboard → Playground runs the same check.
+```
 
 ```sh
 # 1. The link domain serves the verification files with this app in them

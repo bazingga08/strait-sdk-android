@@ -229,3 +229,9 @@ It's safe to include in your app. Never put your secret key (`st_live_…`) in a
 ```
 gradle test     # JDK 17; CI runs the same on Temurin 17
 ```
+
+## Support
+
+- **Email:** support@straitlink.in. We reply within 1 working day (IST).
+- **GitHub:** open an issue on this repo for bugs and questions about the SDK.
+- **Security:** don't open a public issue. Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
