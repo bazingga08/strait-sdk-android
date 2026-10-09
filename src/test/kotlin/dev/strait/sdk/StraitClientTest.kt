@@ -241,6 +241,38 @@ class StraitClientTest {
         assertTrue(got.all { it.matched })
     }
 
+    // --- old Firebase page.link links (B22) ----------------------------------
+
+    @Test
+    fun pageLinkShortLinkIsResolvedWithHost() {
+        val engine = FakeEngine(mapOf("/v1/resolve" to JSONObject()
+            .put("matched", true).put("longUrl", "https://shop.example/p/7").put("linkId", "lnk_7").put("slug", "aBcD").put("recorded", true)))
+        val client = StraitClient(StraitConfig(pk, endpoint, linkHosts = listOf("acme.page.link"), device = { device }, transport = engine))
+        val got = mutableListOf<LinkEvent>()
+        client.onLink { got += it }
+        client.handleUrl("https://acme.page.link/aBcD")
+        assertEquals("https://acme.page.link/aBcD", engine.calls.first { it.path == "/v1/resolve" }.body!!.getString("url"))
+        assertTrue(got.first().matched)
+        assertEquals("https://shop.example/p/7", got.first().url)
+        assertEquals("lnk_7", got.first().linkId)
+    }
+
+    @Test
+    fun pageLinkLongLinkOpensDestinationWithoutLookup() {
+        val engine = FakeEngine(mapOf("/v1/open" to JSONObject().put("ok", true)))
+        val client = StraitClient(StraitConfig(pk, endpoint, linkHosts = listOf("acme.page.link"), device = { device }, transport = engine))
+        val got = mutableListOf<LinkEvent>()
+        client.onLink { got += it }
+        client.handleUrl("https://acme.page.link/?link=https%3A%2F%2Fshop.example%2Fp%2F42%3Fcolor%3Dred&apn=com.acme.app")
+        val e = got.first()
+        assertEquals("app_link", e.route)
+        assertTrue(e.matched)
+        assertEquals("https://shop.example/p/42?color=red", e.url)
+        assertEquals("/p/42", e.path)
+        assertEquals(mapOf("color" to "red"), e.params)
+        assertTrue(engine.calls.none { it.path == "/v1/resolve" })
+    }
+
     // --- deferred -----------------------------------------------------------
 
     @Test

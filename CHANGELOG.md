@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## 0.7.3
+
+- Old Firebase Dynamic Links (shared-spec/SDK-CONTRACT.md B22, conformance vectors v8). Add your
+  `<x>.page.link` host to `linkHosts` (and keep the page.link intent filter in your app build): a page.link
+  **short** link is looked up through `/v1/resolve` like any short link (the engine matches the old host +
+  code of links you imported), and a page.link **long** link (`https://<x>.page.link/?link=<url>&…`) opens
+  its `link=` destination straight away, on the device, with no lookup. Only `*.page.link` hosts at the root
+  path, only an http(s) `link`. New core function `pageLinkLongLink`. Not yet tested on a real phone.
+
 - Referral codes (preview; shared-spec/proposals/referral-code.md, B21): a matched
   deferred `LinkEvent` (Play referrer or `/v1/match`) carries `referralCode` when the
   engine's reply has a valid one. New core function `replyReferralCode`.
