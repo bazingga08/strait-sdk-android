@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Store sheet (beta): `StraitClient.openStoreSheet(url, launcher, options)` (also
+  `Strait.openStoreSheet(client, …)`) opens Google Play inside your app, inline install
+  first, then `market://`, then the web listing, with the Play Install Referrer carrying
+  `strait_link` + `strait_click` from the engine's `POST /v1/store-sheet`. New `StoreSheet`,
+  `StoreIntent`, `StoreLauncher`, `StoreSheetOptions`, `StoreSheetResult`.
 - Referral codes (preview; shared-spec/proposals/referral-code.md, B21): a matched
   deferred `LinkEvent` (Play referrer or `/v1/match`) carries `referralCode` when the
   engine's reply has a valid one. New core function `replyReferralCode`.

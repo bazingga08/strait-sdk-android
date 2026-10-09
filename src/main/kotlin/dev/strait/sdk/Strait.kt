@@ -57,6 +57,14 @@ object Strait {
     fun buildReferrerBody(publishableKey: String, linkId: String): String =
         "{\"publishableKey\":${jsonString(publishableKey)},\"linkId\":${jsonString(linkId)}," +
             "\"platform\":\"android\"}"
+
+    /** Store sheet (beta): same as [StraitClient.openStoreSheet]. */
+    fun openStoreSheet(
+        client: StraitClient,
+        url: String,
+        launcher: StoreLauncher,
+        options: StoreSheetOptions = StoreSheetOptions(),
+    ): StoreSheetResult = client.openStoreSheet(url, launcher, options)
 }
 
 /** Quote + escape a string as a JSON string literal (RFC 8259). */

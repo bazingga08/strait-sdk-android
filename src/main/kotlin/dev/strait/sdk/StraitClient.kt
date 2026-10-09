@@ -267,6 +267,43 @@ class StraitClient(private val config: StraitConfig) {
         false
     }
 
+    /**
+     * Store sheet (beta): open Google Play inside your app for one of your
+     * short links, keeping the deep link (the Play Install Referrer carries the
+     * link id and this tap's id). Blocking: call off the main thread, then start
+     * the Intent on the main thread inside [launcher] if your app needs that.
+     * Without the engine (offline, unknown link) it still opens the store when
+     * [StoreSheetOptions.androidPackage] is set, but the deep link is not kept.
+     */
+    fun openStoreSheet(url: String, launcher: StoreLauncher, options: StoreSheetOptions = StoreSheetOptions()): StoreSheetResult {
+        var reason: String? = null
+        var clickId: String? = null
+        var linkId: String? = null
+        var referrer: String? = null
+        var pkg: String? = options.androidPackage
+        try {
+            val (res, json) = call("POST", "/v1/store-sheet", JSONObject(StoreSheet.buildBody(config.publishableKey, url)))
+            if (res.ok && json.optBoolean("ok", false)) {
+                val android = json.optJSONObject("android")
+                clickId = str(json, "clickId")
+                linkId = str(json, "linkId")
+                referrer = android?.let { str(it, "referrer") }
+                if (pkg == null) pkg = android?.let { str(it, "package") }
+            } else {
+                reason = str(json, "reason") ?: "http_${res.status}"
+            }
+        } catch (_: Exception) {
+            reason = "offline"
+        }
+        if (!StoreSheet.isPackageName(pkg)) {
+            return StoreSheetResult(false, "none", clickId, linkId, referrer, "no_package")
+        }
+        val started = StoreSheet.launch(StoreSheet.plan(pkg!!, referrer, options.callerId, options.inline, options.listing), launcher)
+            ?: return StoreSheetResult(false, "none", clickId, linkId, referrer, reason ?: "no_store")
+        // Not remembered as this app's tap (B15): the tap belongs to the app being installed.
+        return StoreSheetResult(true, started.kind, clickId, linkId, referrer, reason)
+    }
+
     /** Open reports saved while offline, waiting to be sent (blocking; debugging). */
     fun pendingOpenReports(): Int = synchronized(queueLock) { readQueue().size }
 

@@ -218,6 +218,45 @@ status as an `HttpResponse`.
 **Publishable key:** Dashboard → Get started → Publishable key (`st_pub_live_…`).
 It's safe to include in your app. Never put your secret key (`st_live_…`) in an app.
 
+### 5. Store sheet (beta): install another app without leaving yours
+
+When a user taps **Install** for one of your other apps (a sibling, partner or
+"lite" app), open Google Play *inside your app* and keep the deep link. The
+installed app opens on the linked screen through its normal deferred check.
+
+```kotlin
+// Off the main thread (it calls POST /v1/store-sheet first).
+val result = strait.openStoreSheet(
+    "https://<handle>.strait.link/promo",
+    StoreLauncher { s ->
+        val intent = Intent(s.action, Uri.parse(s.data)).apply {
+            s.packageName?.let { setPackage(it) }
+            for ((k, v) in s.extras) when (v) {
+                is Boolean -> putExtra(k, v)
+                is String -> putExtra(k, v)
+            }
+            if (activity == null) addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        try { (activity ?: context).startActivity(intent); true }
+        catch (_: ActivityNotFoundException) { false }
+    },
+    StoreSheetOptions(callerId = context.packageName),
+)
+// result.method: "inline_install" | "market" | "web" | "none"
+```
+
+Order tried: Google Play inline install (a half-sheet over your app; Google
+labels it a test feature, and Play shows the full listing when the sheet can't
+show), then the Play app (`market://`), then the Play web page. Each carries
+`referrer=strait_link=<id>&strait_click=<tap>`, which the installed app's Play
+Install Referrer match reads exactly. The tap is recorded with
+`sent_to = store_sheet` and is not billed during the beta.
+
+It works only where your app is the host. A link tapped inside another
+company's app can't open a store sheet there. If the engine can't be reached,
+pass `androidPackage` to still open the store (the deep link is not kept then,
+`result.reason = "offline"`).
+
 ## Lower-level helpers (unchanged)
 
 `computeSignature` / `h32` (the cross-language deferred-match signature),
