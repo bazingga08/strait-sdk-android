@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- README: the common Strait SDK header (logo, the promise "Straight to the screen. On the record.",
+  badges, links to docs, platform status and the changelog), a platform features table in the
+  availability words (Live / Beta / Planned / Not yet) with the iPhone beta truth (the method is
+  the customer's choice, device matching off by default), and a "Docs and support" section
+  (Talk to the Strait team). The same structure in all seven SDK READMEs (design system v5).
 - Store sheet (beta): `StraitClient.openStoreSheet(url, launcher, options)` (also
   `Strait.openStoreSheet(client, …)`) opens Google Play inside your app, inline install
   first, then `market://`, then the web listing, with the Play Install Referrer carrying

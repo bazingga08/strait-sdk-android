@@ -1,18 +1,39 @@
-# Strait SDK for Android
+<!-- Header: the same in every Strait SDK README (design system v5). -->
+<p align="center">
+  <a href="https://straitlink.in">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset=".github/assets/strait-lockup-dark.svg">
+      <img src=".github/assets/strait-lockup.svg" alt="Strait" width="160" height="53">
+    </picture>
+  </a>
+</p>
+
+<h1 align="center">Strait SDK for Android</h1>
+
+<p align="center"><strong>Straight to the screen. On the record.</strong><br>
+A tap opens the exact screen, and every link open and install is recorded in your Strait dashboard.</p>
+
+<p align="center">
+  <a href="https://github.com/bazingga08/strait-sdk-android/tags"><img alt="Latest version" src="https://img.shields.io/github/v/tag/bazingga08/strait-sdk-android?sort=semver&label=version&style=flat-square&labelColor=0F0D0A&color=423B33"></a>
+  <a href="https://straitlink.in/platform-status/"><img alt="SDK: Beta" src="https://img.shields.io/badge/SDK-beta-423B33?style=flat-square&labelColor=0F0D0A"></a>
+  <a href="https://github.com/bazingga08/strait-sdk-android/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/bazingga08/strait-sdk-android/ci.yml?branch=main&label=CI&style=flat-square&labelColor=0F0D0A&color=423B33"></a>
+  <a href="LICENSE"><img alt="Licence: MIT" src="https://img.shields.io/badge/licence-MIT-423B33?style=flat-square&labelColor=0F0D0A"></a>
+</p>
+
+<p align="center">
+  <a href="https://straitlink.in/docs/sdks/android/">Docs</a> ·
+  <a href="https://straitlink.in/platform-status/">Platform status</a> ·
+  <a href="CHANGELOG.md">Changelog</a> ·
+  <a href="#docs-and-support">Talk to the Strait team</a>
+</p>
 
 `strait-sdk-android` (Kotlin) · v0.7.2
-
-> **Availability:** Android deep links and deferred links: Live · SDK: Beta (installed from GitHub; not on Maven Central yet).
-> [Platform status](https://straitlink.in/platform-status/) · [Docs](https://straitlink.in/docs/)
 
 Deep linking for native Android, part of [Strait](https://straitlink.in). It covers direct links
 (verified App Links and custom-scheme hand-offs), deferred links (Play Install
 Referrer, falling back to a fingerprint match), app-state labelling, analytics
 events, open reporting (every link open recorded once, with an offline retry
 queue) and the fingerprint debug check.
-
-**Straight to the screen. On the record.** A tap opens the exact screen, and
-each link open and install is recorded in your Strait dashboard.
 
 The library is **pure JVM**: every Android piece (Intents, lifecycle, Install
 Referrer, SharedPreferences, display metrics, HTTP) is injected through
@@ -22,6 +43,35 @@ shared vectors. It is a 1:1 port of the React Native reference
 
 Dependencies: Kotlin stdlib only. `org.json` is `compileOnly` because Android
 already ships it. Outside Android, add `org.json:json` yourself.
+
+## Platform features
+
+| Feature | Status | Notes |
+|---|---|---|
+| Direct links: verified App Links and custom schemes | ● Live |  |
+| Deferred links through the install | ● Live | Play Install Referrer first, then a fingerprint match. |
+| Open reporting, analytics events, app-state labels | ◐ Beta | Every link open recorded once, with an offline retry queue. |
+| Store sheet: Google Play inside your app | ◐ Beta | Keeps the deep link through the install. |
+| iPhone install matching | ◐ Beta | In the iOS and cross-platform SDKs, not this package. Your choice in Dashboard → Settings → iPhone installs: device matching, paste handoff, both or neither, read from Strait at runtime. Device matching is off by default. iPhone matches are labelled Estimated until measured. |
+| Published on Maven Central | – Not yet | JitPack builds it from this repo's version tags. |
+
+● Live · ◐ Beta · ○ Planned · – Not yet. The same words as the [platform status](https://straitlink.in/platform-status/) page.
+
+## Install
+
+<!-- brand:install -->
+Published on [JitPack](https://jitpack.io) from this repo's version tags.
+
+```kotlin
+// settings.gradle.kts
+dependencyResolutionManagement {
+    repositories { google(); mavenCentral(); maven("https://jitpack.io") }
+}
+
+// app/build.gradle.kts
+dependencies { implementation("com.github.bazingga08:strait-sdk-android:v0.7.2") }
+```
+<!-- /brand:install -->
 
 ## Contract behaviours (Strait SDK contract)
 
@@ -49,22 +99,6 @@ already ships it. Outside Android, add `org.json:json` yourself.
 Vectors: `src/test/resources/test-vectors.json` (signature) and
 `conformance-vectors.json` v2 (pure helpers). Both are byte-identical copies from
 `shared-spec`, so don't edit them here.
-
-## Install
-
-<!-- brand:install -->
-Published on [JitPack](https://jitpack.io) from this repo's version tags.
-
-```kotlin
-// settings.gradle.kts
-dependencyResolutionManagement {
-    repositories { google(); mavenCentral(); maven("https://jitpack.io") }
-}
-
-// app/build.gradle.kts
-dependencies { implementation("com.github.bazingga08:strait-sdk-android:v0.7.2") }
-```
-<!-- /brand:install -->
 
 ## Android integration
 
@@ -272,8 +306,9 @@ pass `androidPackage` to still open the store (the deep link is not kept then,
 gradle test     # JDK 17; CI runs the same on Temurin 17
 ```
 
-## Support
+## Docs and support
 
-- **Email:** support@straitlink.in. We reply within 1 working day (IST).
-- **GitHub:** open an issue on this repo for bugs and questions about the SDK.
-- **Security:** don't open a public issue. Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
+- **Docs:** [straitlink.in/docs/sdks/android/](https://straitlink.in/docs/sdks/android/) · [platform status](https://straitlink.in/platform-status/) · [troubleshooting](https://straitlink.in/docs/troubleshooting/)
+- **Talk to the Strait team:** [support@straitlink.in](mailto:support@straitlink.in) (replies within 1 working day, IST) or call +91 81218 61890.
+- **Bugs and feature requests:** [open an issue](https://github.com/bazingga08/strait-sdk-android/issues) on this repo.
+- **Security:** never in a public issue. Write to security@straitlink.in (see [SECURITY.md](SECURITY.md)).
