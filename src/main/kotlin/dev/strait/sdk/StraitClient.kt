@@ -118,7 +118,7 @@ class StraitConfig(
     val publishableKey: String,
     /** Your Strait link host, e.g. https://go.yourbrand.com */
     val endpoint: String,
-    /** Extra hosts that serve your short links (custom domains), e.g. "https://go.brand.com". */
+    /** Extra hosts that serve your short links (custom domains, coming soon), e.g. "https://go.brand.com". */
     val linkHosts: List<String> = emptyList(),
     /** Persists "deferred check done" and unsent open reports across launches (SharedPreferences). */
     val storage: KeyValueStore = MemoryStore(),

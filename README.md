@@ -11,6 +11,9 @@ Referrer, falling back to a fingerprint match), app-state labelling, analytics
 events, open reporting (every link open recorded once, with an offline retry
 queue) and the fingerprint debug check.
 
+**Straight to the screen. On the record.** A tap opens the exact screen, and
+each link open and install is recorded in your Strait dashboard.
+
 The library is **pure JVM**: every Android piece (Intents, lifecycle, Install
 Referrer, SharedPreferences, display metrics, HTTP) is injected through
 `StraitConfig`, so `gradle test` checks the logic on a plain JVM against the
@@ -81,7 +84,7 @@ class App : Application() {
         strait = StraitClient(StraitConfig(
             publishableKey = "st_pub_live_…",                       // Dashboard → Get started
             endpoint = "https://<your-handle>.strait.link",
-            linkHosts = listOf("https://go.yourbrand.com"),          // custom short-link domains
+            linkHosts = listOf("https://go.yourbrand.com"),          // custom short-link domains (coming soon)
             storage = object : KeyValueStore {
                 override fun get(key: String) = prefs.getString(key, null)
                 override fun set(key: String, value: String) { prefs.edit().putString(key, value).apply() }
