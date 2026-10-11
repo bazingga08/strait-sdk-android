@@ -19,12 +19,12 @@
   its `link=` destination straight away, on the device, with no lookup. Only `*.page.link` hosts at the root
   path, only an http(s) `link`. New core function `pageLinkLongLink`. Not yet tested on a real phone.
 
-- Referral codes (preview; shared-spec/proposals/referral-code.md, B21): a matched
-  deferred `LinkEvent` (Play referrer or `/v1/match`) carries `referralCode` when the
-  engine's reply has a valid one. New core function `replyReferralCode`.
-
 ## 0.7.2
 
+- Referral codes (preview; shared-spec/proposals/referral-code.md, B21): a matched
+  deferred `LinkEvent` (Play referrer or `/v1/match`) carries `referralCode` when the
+  engine's reply has a valid one. New core function `replyReferralCode`. (In the
+  `v0.7.2` tag; earlier listed here as Unreleased.)
 - Privacy hardening (shared-spec/SDK-CONTRACT.md B18): the URL sent to `/v1/open` and
   `/v1/resolve` and saved in the offline retry queue (`strait.pendingOpens`) no longer
   carries the query string or fragment, except the first `utm_source` pair, which the

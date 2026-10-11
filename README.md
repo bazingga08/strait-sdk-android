@@ -192,7 +192,7 @@ Every time a link opens the app, the SDK reports it once (contract B14):
 | Browser handed off to the app (`yourapp://…`) | `/v1/open` | the exact tap (`strait_click`, removed before your app sees the URL) |
 | First open after a Play install | `/v1/referrer` | the exact tap that sent the user to the store |
 | First open with no Play referrer link | `/v1/match` | the matched tap |
-| Your own https links | `/v1/open` | the URL (tap id removed); the server keeps host + path only, never the query |
+| Your own https links | `/v1/open` | host + path (plus `utm_source`, if any); the query and fragment never leave the device (B18) |
 
 Reports that can't be sent (offline, server busy) are saved in `storage` under
 `strait.pendingOpens` and retried on the next `start`, whenever
