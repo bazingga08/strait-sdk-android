@@ -182,8 +182,25 @@ data class ClassifiedUrl(
 )
 
 /**
+ * The deep link inside an old Firebase Dynamic Links long link (contract B22):
+ * `https://<x>.page.link/?link=<url>&apn=...` -> `<url>`. Only on a `*.page.link`
+ * host, only at the root path, only when `link` is an absolute http(s) URL with
+ * a host. Anything else -> null (a page.link short link is resolved by the engine).
+ */
+fun pageLinkLongLink(p: SplitUrl): String? {
+    if (!p.host.endsWith(".page.link") || (p.path != "/" && p.path != "")) return null
+    val link = p.params["link"]
+    if (link.isNullOrEmpty()) return null
+    val inner = splitUrl(link) ?: return null
+    if ((inner.scheme != "https" && inner.scheme != "http") || inner.host.isEmpty()) return null
+    return link.trim()
+}
+
+/**
  * What a URL handed to the app means (B4):
  * - https on a Strait link host -> a short link; ask /v1/resolve for the destination.
+ *   Except an FDL long link on a `*.page.link` link host (B22): its `link=` value
+ *   IS the destination, read on the device with no network call.
  * - other https (a verified link on the customer's own site) -> it IS the destination.
  * - yourapp://host/path (browser hand-off) -> destination https://host/path.
  * A `strait_click` tap id is removed from the destination and returned apart.
@@ -193,6 +210,11 @@ fun classifyUrl(raw: String, linkHosts: List<String>): ClassifiedUrl? {
     val p0 = splitUrl(raw) ?: return null
     val isWeb = p0.scheme == "https" || p0.scheme == "http"
     if (isWeb && linkHosts.any { it.lowercase() == p0.host }) {
+        val long = pageLinkLongLink(p0)
+        if (long != null) {
+            val inner = classifyUrl(long, emptyList())
+            if (inner != null && !inner.needsResolve) return inner.copy(route = LinkRoute.APP_LINK)
+        }
         return ClassifiedUrl(LinkRoute.APP_LINK, needsResolve = true)
     }
     val (clean, clickId) = takeClickId(raw)

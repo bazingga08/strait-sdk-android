@@ -27,7 +27,7 @@ A tap opens the exact screen, and every link open and install is recorded in you
   <a href="#docs-and-support">Talk to the Strait team</a>
 </p>
 
-`strait-sdk-android` (Kotlin) · v0.7.2
+`strait-sdk-android` (Kotlin) · v0.7.3
 
 Deep linking for native Android, part of [Strait](https://straitlink.in). It covers direct links
 (verified App Links and custom-scheme hand-offs), deferred links (Play Install
@@ -69,7 +69,7 @@ dependencyResolutionManagement {
 }
 
 // app/build.gradle.kts
-dependencies { implementation("com.github.bazingga08:strait-sdk-android:v0.7.2") }
+dependencies { implementation("com.github.bazingga08:strait-sdk-android:v0.7.3") }
 ```
 <!-- /brand:install -->
 
@@ -95,9 +95,10 @@ dependencies { implementation("com.github.bazingga08:strait-sdk-android:v0.7.2")
 | B16 every attributed open supplies the tap id (`/v1/resolve`, `/v1/match`, `/v1/referrer` reply `clickId` → `strait.lastTap`, `replyClickId`) | ✓ | `StraitClient`, `Core.kt`, vectors v4 |
 | B17 `screenWidth` is the portrait (shorter-side) width: `portraitScreenWidth(w, h)` | ✓ | `Core.kt`, README `device`, vectors v5 |
 | B18 open reports and the retry queue carry no query or fragment (`reportUrl`: host + path, plus the first `utm_source`); an expired `strait.lastTap` is deleted (`staleTap`) | ✓ | `StraitClient`, `Core.kt`, vectors v6 |
+| B22 old Firebase `*.page.link` links: short link → `/v1/resolve` (engine matches the old host + code); long link `/?link=<url>` → the `link` value is the destination, read on the device, no lookup | ✓ | `Core.kt` (`pageLinkLongLink`, `classifyUrl`), vectors v8 |
 
 Vectors: `src/test/resources/test-vectors.json` (signature) and
-`conformance-vectors.json` v2 (pure helpers). Both are byte-identical copies from
+`conformance-vectors.json` v8 (pure helpers). Both are byte-identical copies from
 `shared-spec`, so don't edit them here.
 
 ## Android integration
@@ -293,6 +294,21 @@ It works only where your app is the host. A link tapped inside another
 company's app can't open a store sheet there. If the engine can't be reached,
 pass `androidPackage` to still open the store (the deep link is not kept then,
 `result.reason = "offline"`).
+
+### Old Firebase page.link links (contract B22)
+
+Moving off Firebase Dynamic Links? People who already have your app can keep opening it from old
+`<x>.page.link` links, as long as Google keeps serving page.link's `assetlinks.json` (it still does today;
+nobody but Google controls page.link):
+
+1. Keep the page.link intent filter (`android:host="<x>.page.link"`, `autoVerify`) in your next app build.
+2. Add the host: `StraitConfig(…, linkHosts = listOf("<x>.page.link"))`.
+3. Import your old links in the dashboard (Import → Firebase); each keeps its old host and code.
+
+A page.link short link (`https://<x>.page.link/aBcD`) is then looked up like any Strait short link; a long link
+(`https://<x>.page.link/?link=https://…`) opens its `link=` destination on the device, with no network call.
+People without your app still land on whatever Google serves. Covered by unit tests; not yet tested on a
+real phone.
 
 ## Lower-level helpers (unchanged)
 
