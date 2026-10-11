@@ -482,13 +482,13 @@ class StraitClient(private val config: StraitConfig) {
     /**
      * The deferred check. [record] (the once-per-install run) sends the openId so
      * the engine records this first open + install exactly once; the debug
-     * re-check doesn't, so it never adds installs.
+     * re-check sends record:false instead, so the engine adds no install.
      */
     private fun runDeferred(record: Boolean): LinkEvent {
         val t0 = config.clock()
         val id = newOpenId(t0)
         announce(LinkStart(id, "deferred", AppStateAtLink.CLOSED, null, t0))
-        fun tag(body: JSONObject): JSONObject = if (record) body.put("openId", id).put("at", t0) else body
+        fun tag(body: JSONObject): JSONObject = if (record) body.put("openId", id).put("at", t0) else body.put("record", false)
         // No answer, 429 or 5xx = try again next launch (reported as 'network').
         fun answered(path: String, body: JSONObject): JSONObject {
             val (res, json) = call("POST", path, body)

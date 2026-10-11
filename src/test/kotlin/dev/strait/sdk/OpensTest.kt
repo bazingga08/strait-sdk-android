@@ -305,6 +305,21 @@ class OpensTest {
         val body = h.engine.of("/v1/match")[0].body!!
         assertFalse(body.has("openId"))
         assertFalse(body.has("at"))
+        assertEquals(false, body.opt("record"))
+    }
+
+    @Test
+    fun debugRecheckSendsRecordFalseOnReferrerAndFirstLaunchNever() {
+        val hit = Reply.Status(body = JSONObject().put("matched", true).put("longUrl", "https://shop.example/p/42")
+            .put("linkId", "lnk_42"))
+        val h = Harness(FakeEngine("/v1/referrer" to hit), referrer = "strait_link=lnk_42")
+        h.client.start(null)
+        h.client.checkDeferred()
+        val (first, debug) = h.engine.of("/v1/referrer").map { it.body!! }
+        assertFalse(first.has("record"))
+        assertTrue(first.has("openId"))
+        assertEquals(false, debug.opt("record"))
+        assertFalse(debug.has("openId"))
     }
 
     @Test
