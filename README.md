@@ -310,7 +310,7 @@ A page.link short link (`https://<x>.page.link/aBcD`) is then looked up like any
 People without your app still land on whatever Google serves. Covered by unit tests; not yet tested on a
 real phone.
 
-## Lower-level helpers (unchanged)
+## Lower-level helpers (signature only; the rest internal since 0.8.0)
 
 `computeSignature` / `h32` (the cross-language deferred-match signature). The contract helpers in
 `Core.kt` (`classifyUrl`, `pruneOpenQueue`, `parseStraitLink`, ...) are internal since 0.8.0; `StraitClient`
