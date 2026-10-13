@@ -18,7 +18,7 @@ import kotlin.math.ceil
  * fractional logical widths UP (1080 px at 2.625 = 411.43 -> 412). Matching
  * needs the app and the browser at the tap to agree (B2).
  */
-fun browserScreenWidth(logicalWidth: Double): Int = ceil(logicalWidth - 0.001).toInt()
+internal fun browserScreenWidth(logicalWidth: Double): Int = ceil(logicalWidth - 0.001).toInt()
 
 /**
  * The `screenWidth` device field (B17): the screen's SHORTER side, as a browser
@@ -29,7 +29,7 @@ fun browserScreenWidth(logicalWidth: Double): Int = ceil(logicalWidth - 0.001).t
 fun portraitScreenWidth(logicalWidth: Double, logicalHeight: Double): Int =
     browserScreenWidth(minOf(logicalWidth, logicalHeight))
 
-data class SplitUrl(
+internal data class SplitUrl(
     val scheme: String,
     val host: String,
     val path: String,
@@ -43,7 +43,7 @@ private val SCHEME_RE = Regex("^[a-z][a-z0-9+.-]*://", RegexOption.IGNORE_CASE)
  * Split a URL without platform URL classes. Scheme and host are lower-cased;
  * '+' and %-escapes in the query are decoded; the fragment is dropped.
  */
-fun splitUrl(u: String): SplitUrl? {
+internal fun splitUrl(u: String): SplitUrl? {
     val m = URL_RE.find(u.trim()) ?: return null
     val params = LinkedHashMap<String, String>()
     for (pair in m.groupValues[4].split('&')) {
@@ -97,7 +97,7 @@ internal fun decode(s: String): String {
  * hosts ("go.brand.com"). Lower-cased, de-duplicated, order kept; anything
  * else (blank, paths, spaces) is ignored.
  */
-fun normalizeLinkHosts(endpoint: String, linkHosts: List<String> = emptyList()): List<String> {
+internal fun normalizeLinkHosts(endpoint: String, linkHosts: List<String> = emptyList()): List<String> {
     val bare = Regex("^[a-z0-9.-]+(:\\d+)?$", RegexOption.IGNORE_CASE)
     val out = mutableListOf<String>()
     for (h in listOf(endpoint) + linkHosts) {
@@ -109,13 +109,13 @@ fun normalizeLinkHosts(endpoint: String, linkHosts: List<String> = emptyList()):
 }
 
 /** The strait_link id inside a Play Install Referrer string, or null. */
-fun parseStraitLink(referrer: String?): String? = referrerParam(referrer, "strait_link")
+internal fun parseStraitLink(referrer: String?): String? = referrerParam(referrer, "strait_link")
 
 /**
  * The tap id (strait_click) inside a Play Install Referrer string, or null.
  * Joins the install to the exact tap that sent the user to the store.
  */
-fun parseStraitClick(referrer: String?): String? =
+internal fun parseStraitClick(referrer: String?): String? =
     referrerParam(referrer, "strait_click")?.takeIf { CLICK_ID.matches(it) }
 
 private fun referrerParam(referrer: String?, key: String): String? {
@@ -133,14 +133,14 @@ private val CLICK_ID =
     Regex("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", RegexOption.IGNORE_CASE)
 
 /** Result of [takeClickId]: the URL without its tap id, and the tap id (or null). */
-data class TakenClickId(val url: String, val clickId: String?)
+internal data class TakenClickId(val url: String, val clickId: String?)
 
 /**
  * Remove every `strait_click` parameter from a URL's query, keeping the rest
  * of the URL byte-for-byte (fragment included). Returns the cleaned URL and
  * the tap id (null when absent or malformed). The app never sees the tap id.
  */
-fun takeClickId(raw: String): TakenClickId {
+internal fun takeClickId(raw: String): TakenClickId {
     val s = raw.trim()
     val hash = s.indexOf('#')
     val beforeHash = if (hash < 0) s else s.substring(0, hash)
@@ -171,7 +171,7 @@ object LinkRoute {
  * Result of [classifyUrl]. When [needsResolve] is true the URL is a Strait
  * short link and [url]/[path]/[params]/[clickId] are null; ask /v1/resolve.
  */
-data class ClassifiedUrl(
+internal data class ClassifiedUrl(
     val route: String,
     val needsResolve: Boolean,
     val url: String? = null,
@@ -187,7 +187,7 @@ data class ClassifiedUrl(
  * host, only at the root path, only when `link` is an absolute http(s) URL with
  * a host. Anything else -> null (a page.link short link is resolved by the engine).
  */
-fun pageLinkLongLink(p: SplitUrl): String? {
+internal fun pageLinkLongLink(p: SplitUrl): String? {
     if (!p.host.endsWith(".page.link") || (p.path != "/" && p.path != "")) return null
     val link = p.params["link"]
     if (link.isNullOrEmpty()) return null
@@ -206,7 +206,7 @@ fun pageLinkLongLink(p: SplitUrl): String? {
  * A `strait_click` tap id is removed from the destination and returned apart.
  * Returns null for anything that isn't a URL.
  */
-fun classifyUrl(raw: String, linkHosts: List<String>): ClassifiedUrl? {
+internal fun classifyUrl(raw: String, linkHosts: List<String>): ClassifiedUrl? {
     val p0 = splitUrl(raw) ?: return null
     val isWeb = p0.scheme == "https" || p0.scheme == "http"
     if (isWeb && linkHosts.any { it.lowercase() == p0.host }) {
@@ -231,26 +231,26 @@ fun classifyUrl(raw: String, linkHosts: List<String>): ClassifiedUrl? {
 }
 
 /** Open reports waiting to be sent are kept at most this long... */
-const val OPEN_QUEUE_MAX_AGE_MS: Long = 7L * 24 * 60 * 60 * 1000
+internal const val OPEN_QUEUE_MAX_AGE_MS: Long = 7L * 24 * 60 * 60 * 1000
 
 /** ...and at most this many (oldest dropped first). */
-const val OPEN_QUEUE_MAX: Int = 100
+internal const val OPEN_QUEUE_MAX: Int = 100
 
 /**
  * Prune a pending-report queue: drop reports older than [OPEN_QUEUE_MAX_AGE_MS]
  * (by their `at`), then keep the newest [OPEN_QUEUE_MAX]. Order is kept.
  */
-fun <T> pruneOpenQueue(queue: List<T>, now: Long, at: (T) -> Long): List<T> =
+internal fun <T> pruneOpenQueue(queue: List<T>, now: Long, at: (T) -> Long): List<T> =
     queue.filter { now - at(it) <= OPEN_QUEUE_MAX_AGE_MS }.takeLast(OPEN_QUEUE_MAX)
 
 /**
  * Conversion events carry the tap id of the most recent attributed link open
  * for this long (contract B15).
  */
-const val ATTRIBUTION_WINDOW_MS: Long = 7L * 24 * 60 * 60 * 1000
+internal const val ATTRIBUTION_WINDOW_MS: Long = 7L * 24 * 60 * 60 * 1000
 
 /** Storage value for the remembered tap (key `strait.lastTap`): `{"clickId":...,"at":<epoch ms>}`. */
-fun rememberTap(clickId: String, at: Long): String =
+internal fun rememberTap(clickId: String, at: Long): String =
     org.json.JSONObject().put("clickId", clickId.lowercase()).put("at", at).toString()
 
 /**
@@ -259,7 +259,7 @@ fun rememberTap(clickId: String, at: Long): String =
  * valid tap id opened at most [ATTRIBUTION_WINDOW_MS] before [now] (and not
  * after it). Anything unreadable means no tap.
  */
-fun eventClickId(stored: String?, now: Long, explicit: String? = null): String? {
+internal fun eventClickId(stored: String?, now: Long, explicit: String? = null): String? {
     if (!explicit.isNullOrEmpty()) return explicit
     if (stored.isNullOrEmpty()) return null
     val tap = try { org.json.JSONObject(stored) } catch (_: Exception) { return null }
@@ -276,7 +276,7 @@ fun eventClickId(stored: String?, now: Long, explicit: String? = null): String? 
  * [ATTRIBUTION_WINDOW_MS] before [now] (or after it). The SDK then deletes it
  * instead of keeping it on the device (contract B18).
  */
-fun staleTap(stored: String?, now: Long): Boolean = !stored.isNullOrEmpty() && eventClickId(stored, now) == null
+internal fun staleTap(stored: String?, now: Long): Boolean = !stored.isNullOrEmpty() && eventClickId(stored, now) == null
 
 /**
  * The URL the SDK reports to the engine (`/v1/open`, `/v1/resolve`) or saves in
@@ -286,7 +286,7 @@ fun staleTap(stored: String?, now: Long): Boolean = !stored.isNullOrEmpty() && e
  * query: it stores host + path only. The query is what sits before any '#',
  * between the first and second '?'.
  */
-fun reportUrl(url: String): String {
+internal fun reportUrl(url: String): String {
     val noFragment = url.substringBefore('#')
     val q = noFragment.indexOf('?')
     if (q < 0) return noFragment
@@ -304,7 +304,7 @@ fun reportUrl(url: String): String {
  * e.g. the Play referrer's — so an older engine that returns none keeps B15);
  * else null, which forgets the remembered tap (the newer touch wins).
  */
-fun replyClickId(reply: Any?, fallback: String? = null): String? {
+internal fun replyClickId(reply: Any?, fallback: String? = null): String? {
     if (reply is String && CLICK_ID.matches(reply)) return reply.lowercase()
     if (fallback != null && CLICK_ID.matches(fallback)) return fallback.lowercase()
     return null
@@ -318,14 +318,14 @@ private val REFERRAL_CODE = Regex("^[A-Za-z0-9_-]{1,64}$")
  * - or _) counts, kept exactly as sent; anything else, or an engine that
  * sends no `referralCode`, gives null.
  */
-fun replyReferralCode(reply: Any?): String? =
+internal fun replyReferralCode(reply: Any?): String? =
     if (reply is String && REFERRAL_CODE.matches(reply)) reply else null
 
 /** Whether a failed report should be kept for retry: no answer (null), 429 or 5xx. */
-fun shouldRetryReport(status: Int?): Boolean = status == null || status == 429 || status >= 500
+internal fun shouldRetryReport(status: Int?): Boolean = status == null || status == 429 || status >= 500
 
 /** A unique id for one link open (the engine de-duplicates retries by it). */
-fun newOpenId(now: Long, random: () -> Double = Math::random): String {
+internal fun newOpenId(now: Long, random: () -> Double = Math::random): String {
     val alphabet = "abcdefghijklmnopqrstuvwxyz0123456789"
     val r = StringBuilder(12)
     repeat(12) { r.append(alphabet[kotlin.math.floor(random() * 36).toInt()]) }
@@ -333,10 +333,10 @@ fun newOpenId(now: Long, random: () -> Double = Math::random): String {
 }
 
 /** A link arriving this soon after the app came back to the front came "from background". */
-const val RESUME_WINDOW_MS: Long = 2000
+internal const val RESUME_WINDOW_MS: Long = 2000
 
 /** Pauses shorter than this are Android delivering the link, not the user leaving. */
-const val TRANSIENT_PAUSE_MS: Long = 1000
+internal const val TRANSIENT_PAUSE_MS: Long = 1000
 
 /** App lifecycle state, as reported by ProcessLifecycleOwner / Activity callbacks. */
 enum class AppLifecycleState(val wire: String) {
@@ -360,7 +360,7 @@ object AppStateAtLink {
  * before or after the resume: a pause under [TRANSIENT_PAUSE_MS] is that
  * delivery (app was on screen); a longer one means the user had left.
  */
-class AppStateTracker {
+internal class AppStateTracker {
     private var state = AppLifecycleState.ACTIVE
     private var backgroundAt = Double.NEGATIVE_INFINITY
     private var resumeAt = Double.NEGATIVE_INFINITY

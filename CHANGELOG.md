@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.8.0
+
+- Smaller public API (SDK-23, decision record: shared-spec `docs/adr/0001-sdk-public-api-surface.md`).
+- Removed the unused legacy deferred-link pieces: `Strait.buildMatchBody`, `Strait.buildReferrerBody`,
+  `MatchResult` and `HttpPoster`. Nothing in the SDK called them, and a body built with them had no
+  `openId` or `at`, so an app using them skipped contract rules B6 and B14. Use `StraitClient`
+  (`start()`, `onLink`, `checkDeferred()`), which does the deferred match for you.
+- The contract helpers in `Core.kt` are now `internal`: `classifyUrl`, `splitUrl`, `SplitUrl`,
+  `normalizeLinkHosts`, `parseStraitLink`, `parseStraitClick`, `takeClickId`, `pageLinkLongLink`,
+  `pruneOpenQueue`, `rememberTap`, `eventClickId`, `staleTap`, `reportUrl`, `replyClickId`,
+  `replyReferralCode`, `shouldRetryReport`, `newOpenId`, `browserScreenWidth`, `AppStateTracker` and the
+  queue and window constants. None were in the docs. Still public: `StraitClient` and its types,
+  `DeviceFields`, `portraitScreenWidth`, `AppLifecycleState`, `AppStateAtLink`, `LinkRoute`,
+  `computeSignature`, `h32` and the store sheet.
+
 ## 0.7.4
 
 - `checkDeferred()` (the debug / settings re-check) now sends `"record": false` on `/v1/match` and `/v1/referrer`, so the
