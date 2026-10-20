@@ -1,0 +1,49 @@
+name: Maven Central
+# Upload a release to Maven Central as in.straitlink:strait-sdk-android (SDK-26), alongside JitPack.
+# Run by hand on a version tag: Actions -> Maven Central -> Run workflow (pick the tag).
+# It uploads as USER_MANAGED: nothing goes public until you press "Publish" on central.sonatype.com
+# (Deployments). Without the four secrets below it builds + tests only and stops.
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  central:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@48b5f213c81028ace310571dc5ec0fbbca0b2947 # v4
+      - run: ./gradlew test
+      - name: Stop here until the Central secrets exist
+        id: gate
+        env:
+          U: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          P: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          K: ${{ secrets.SIGNING_KEY }}
+        run: |
+          if [ -z "$U" ] || [ -z "$P" ] || [ -z "$K" ]; then echo "::notice::Maven Central secrets not set: tested only, nothing uploaded (PUBLISHING.md, Maven Central)"; echo "go=0" >> "$GITHUB_OUTPUT"; else echo "go=1" >> "$GITHUB_OUTPUT"; fi
+      - name: Build the signed bundle
+        if: steps.gate.outputs.go == '1'
+        env:
+          CENTRAL: 'true'
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
+        run: |
+          ./gradlew publishReleasePublicationToCentralStagingRepository
+          cd build/central-staging && zip -qr ../central-bundle.zip in -x '*/maven-metadata.xml*'
+      - name: Upload to the Central Portal (waits for your Publish click)
+        if: steps.gate.outputs.go == '1'
+        env:
+          U: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          P: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+        run: |
+          token="$(printf '%s:%s' "$U" "$P" | base64 -w0)"
+          curl -fsS -X POST "https://central.sonatype.com/api/v1/publisher/upload?publishingType=USER_MANAGED&name=strait-sdk-android-${GITHUB_REF_NAME}" \
+            -H "Authorization: Bearer $token" -F "bundle=@build/central-bundle.zip"
+          echo; echo "::notice::Uploaded. Open central.sonatype.com -> Deployments, check it validated, press Publish."
