@@ -16,4 +16,5 @@ jobs:
           java-version: 17
       - uses: gradle/actions/setup-gradle@v4
       - run: ./gradlew test publishToMavenLocal --no-daemon
+      - run: node scripts/spec-vectors.mjs
       - run: node scripts/brand.mjs
