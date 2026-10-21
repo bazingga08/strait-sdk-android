@@ -90,7 +90,7 @@ dependencies { implementation("com.github.bazingga08:strait-sdk-android:v0.8.0")
 | B11 JSON built by an encoder (org.json / escaped builders) | ✓ | `StraitClient`, `Strait.build*Body` |
 | B12 `splitUrl` without `Uri`/`URI` (lower-cased, `+`/`%xx` decoded, fragment dropped) | ✓ | `Core.kt`, vectors |
 | B13 `trackEvent`, `reportFingerprint` (origin `app`), `compareFingerprint` | ✓ | `StraitClient` |
-| B14 every open reported once (`newOpenId` = event id), retry queue `strait.pendingOpens` (`pruneOpenQueue`, `shouldRetryReport`), `pendingOpenReports()` / `flushOpenReports()` | ✓ | `StraitClient`, `Core.kt`, vectors |
+| B14 every open reported once (`newOpenId` = event id), retry queue `strait.pendingOpens` (`pruneOpenQueue`, `shouldRetryReport`), `pendingOpenReports()` / `flushOpenReports()`; `deviceClass` on resolve / open / store sheet (`deviceClassForSize`, sw600dp) | ✓ | `StraitClient`, `Core.kt`, vectors v9 |
 | B15 conversion events carry the tap id (`strait.lastTap`, `eventClickId`, 7-day `ATTRIBUTION_WINDOW_MS`, explicit `clickId` override) | ✓ | `StraitClient`, `Core.kt`, vectors |
 | B16 every attributed open supplies the tap id (`/v1/resolve`, `/v1/match`, `/v1/referrer` reply `clickId` → `strait.lastTap`, `replyClickId`) | ✓ | `StraitClient`, `Core.kt`, vectors v4 |
 | B17 `screenWidth` is the portrait (shorter-side) width: `portraitScreenWidth(w, h)` | ✓ | `Core.kt`, README `device`, vectors v5 |
@@ -184,7 +184,13 @@ a preview and not switched on yet (contract B21). Grant rewards from your server
 
 ### What Strait records automatically (no extra code)
 
-Every time a link opens the app, the SDK reports it once (contract B14):
+Every time a link opens the app, the SDK reports it once (contract B14).
+Open reports and the store sheet also send `deviceClass` (`phone` or `tablet`):
+by default the SDK reads `smallestScreenWidthDp` from the system configuration
+(600 dp or more = tablet, the standard sw600dp rule). To set it yourself, pass
+`deviceClass = deviceClassForSize(resources.configuration.smallestScreenWidthDp.toDouble())`
+(or `null` to send nothing) to `StraitConfig`. Older engines ignore it.
+
 
 | How the app opened | Reported via | Joined to |
 |---|---|---|

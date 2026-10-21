@@ -75,6 +75,14 @@ class ConformanceTest {
     }
 
     @Test
+    fun deviceClassVectors() {
+        for (c in objects("deviceClass")) {
+            val expected = if (c.isNull("expected")) null else c.getString("expected")
+            assertEquals(expected, deviceClassForSize(c.getDouble("shortestSide")), "shortestSide=${c.get("shortestSide")}")
+        }
+    }
+
+    @Test
     fun portraitScreenWidthVectors() {
         for (c in objects("portraitScreenWidth")) {
             assertEquals(c.getInt("expected"), portraitScreenWidth(c.getDouble("width"), c.getDouble("height")),

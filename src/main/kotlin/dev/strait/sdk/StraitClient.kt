@@ -135,6 +135,13 @@ class StraitConfig(
      */
     val executor: Executor = Executor { it.run() },
     val clock: () -> Long = System::currentTimeMillis,
+    /**
+     * What the app runs on, sent as `deviceClass` with /v1/resolve, /v1/open and
+     * /v1/store-sheet (contract B14): "phone" or "tablet" (anything else is not sent).
+     * Default: the smallest-width rule (>= 600 dp = tablet) read from the system
+     * configuration; null (not sent) when it can't be read.
+     */
+    val deviceClass: String? = systemDeviceClass(),
 )
 
 private const val DEFERRED_FLAG = "strait.deferredChecked"
@@ -147,6 +154,7 @@ private const val TAP_KEY = "strait.lastTap"
  */
 class StraitClient(private val config: StraitConfig) {
     private val base = config.endpoint.trimEnd('/')
+    private val deviceClass: String? = config.deviceClass?.takeIf { it == "phone" || it == "tablet" }
     private val linkHosts: List<String> = normalizeLinkHosts(base, config.linkHosts)
     private val events = ArrayList<LinkEvent>()
     private val listeners = CopyOnWriteArrayList<(LinkEvent) -> Unit>()
@@ -282,7 +290,7 @@ class StraitClient(private val config: StraitConfig) {
         var referrer: String? = null
         var pkg: String? = options.androidPackage
         try {
-            val (res, json) = call("POST", "/v1/store-sheet", JSONObject(StoreSheet.buildBody(config.publishableKey, url)))
+            val (res, json) = call("POST", "/v1/store-sheet", JSONObject(StoreSheet.buildBody(config.publishableKey, url, deviceClass)))
             if (res.ok && json.optBoolean("ok", false)) {
                 val android = json.optJSONObject("android")
                 clickId = str(json, "clickId")
@@ -383,6 +391,7 @@ class StraitClient(private val config: StraitConfig) {
     /** POST /v1/open; the HTTP status, or null when there was no answer. */
     private fun sendReport(report: JSONObject): Int? = try {
         val body = JSONObject(report.toString()).put("publishableKey", config.publishableKey)
+        if (deviceClass != null) body.put("deviceClass", deviceClass) // B14: added at send time, never queued
         call("POST", "/v1/open", body).first.status
     } catch (_: Exception) {
         null
@@ -459,6 +468,7 @@ class StraitClient(private val config: StraitConfig) {
                 .put("appState", appState)
                 .put("firstLaunch", firstLaunch)
                 .put("at", t0)
+            if (deviceClass != null) body.put("deviceClass", deviceClass)
             val json = call("POST", "/v1/resolve", body).second
             val matched = json.opt("matched") == true
             val reason = if (matched) null else (str(json, "reason") ?: str(json, "error"))
