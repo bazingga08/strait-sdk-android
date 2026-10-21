@@ -4,7 +4,7 @@ import org.json.JSONObject
 import java.net.URLEncoder
 
 /*
- * Store sheet (beta): open Google Play INSIDE your app for one of your Strait
+ * Store sheet (new): open Google Play INSIDE your app for one of your Strait
  * links and keep the deep link across the install.
  *
  * 1. The engine records the tap (POST /v1/store-sheet, sent_to 'store_sheet')

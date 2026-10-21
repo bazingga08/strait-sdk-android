@@ -268,7 +268,7 @@ class StraitClient(private val config: StraitConfig) {
     }
 
     /**
-     * Store sheet (beta): open Google Play inside your app for one of your
+     * Store sheet (new): open Google Play inside your app for one of your
      * short links, keeping the deep link (the Play Install Referrer carries the
      * link id and this tap's id). Blocking: call off the main thread, then start
      * the Intent on the main thread inside [launcher] if your app needs that.
