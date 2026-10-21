@@ -14,9 +14,9 @@
 A tap opens the exact screen, and every link open and install is recorded in your Strait dashboard.</p>
 
 <p align="center">
-  <a href="https://github.com/bazingga08/strait-sdk-android/tags"><img alt="Latest version" src="https://img.shields.io/github/v/tag/bazingga08/strait-sdk-android?sort=semver&label=version&style=flat-square&labelColor=0F0D0A&color=423B33"></a>
+  <a href="https://github.com/strait-link/strait-sdk-android/tags"><img alt="Latest version" src="https://img.shields.io/github/v/tag/strait-link/strait-sdk-android?sort=semver&label=version&style=flat-square&labelColor=0F0D0A&color=423B33"></a>
   <a href="https://straitlink.in/platform-status/"><img alt="SDK: Beta" src="https://img.shields.io/badge/SDK-beta-423B33?style=flat-square&labelColor=0F0D0A"></a>
-  <a href="https://github.com/bazingga08/strait-sdk-android/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/bazingga08/strait-sdk-android/ci.yml?branch=main&label=CI&style=flat-square&labelColor=0F0D0A"></a>
+  <a href="https://github.com/strait-link/strait-sdk-android/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/strait-link/strait-sdk-android/ci.yml?branch=main&label=CI&style=flat-square&labelColor=0F0D0A"></a>
   <a href="LICENSE"><img alt="Licence: MIT" src="https://img.shields.io/badge/licence-MIT-423B33?style=flat-square&labelColor=0F0D0A"></a>
 </p>
 
@@ -69,7 +69,7 @@ dependencyResolutionManagement {
 }
 
 // app/build.gradle.kts
-dependencies { implementation("com.github.bazingga08:strait-sdk-android:v0.8.0") }
+dependencies { implementation("com.github.strait-link:strait-sdk-android:v0.8.0") }
 ```
 <!-- /brand:install -->
 
@@ -326,5 +326,5 @@ gradle test     # JDK 17; CI runs the same on Temurin 17
 
 - **Docs:** [straitlink.in/docs/sdks/android/](https://straitlink.in/docs/sdks/android/) · [platform status](https://straitlink.in/platform-status/) · [troubleshooting](https://straitlink.in/docs/troubleshooting/)
 - **Talk to the Strait team:** [support@straitlink.in](mailto:support@straitlink.in) (replies within 1 working day, IST) or call +91 81218 61890.
-- **Bugs and feature requests:** [open an issue](https://github.com/bazingga08/strait-sdk-android/issues) on this repo.
+- **Bugs and feature requests:** [open an issue](https://github.com/strait-link/strait-sdk-android/issues) on this repo.
 - **Security:** never in a public issue. Write to security@straitlink.in (see [SECURITY.md](SECURITY.md)).
