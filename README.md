@@ -52,10 +52,10 @@ already ships it. Outside Android, add `org.json:json` yourself.
 | Deferred links through the install | ● Live | Play Install Referrer first, then a fingerprint match. |
 | Open reporting, analytics events, app-state labels | ◐ Beta | Every link open recorded once, with an offline retry queue. |
 | Store sheet: Google Play inside your app | ◐ Beta | Keeps the deep link through the install. |
-| iPhone install matching | ◐ Beta | In the iOS and cross-platform SDKs, not this package. Your choice in Dashboard → Settings → iPhone installs: device matching, paste handoff, both or neither, read from Strait at runtime. Device matching is off by default. iPhone matches are labelled Estimated until measured. |
+| iPhone install matching | Opt-in | Off until you choose it; proven on iPhone simulators, the real-iPhone run waits on our App Store listing. In the iOS and cross-platform SDKs, not this package. Your choice in Dashboard → Settings → iPhone installs: device matching, paste handoff, both or neither, read from Strait at runtime. Device matching is off by default. iPhone matches are labelled Estimated until measured. |
 | Published on Maven Central | – Not yet | JitPack builds it from this repo's version tags. |
 
-● Live · ◐ Beta · ○ Planned · – Not yet. The same words as the [platform status](https://straitlink.in/platform-status/) page.
+● Live · ◐ Beta · ○ Planned · – Not yet · Opt-in: off until you switch it on. The same words as the [platform status](https://straitlink.in/platform-status/) page.
 
 ## Install
 
