@@ -1,6 +1,7 @@
 plugins {
     kotlin("jvm") version "1.9.24"
     `maven-publish`
+    signing
 }
 
 // Public identity (owner, repo, URLs, copyright holder) comes from brand.json only.
@@ -14,6 +15,10 @@ if (System.getenv("JITPACK") == "true") {
     group = System.getenv("GROUP") ?: group
     version = System.getenv("VERSION") ?: version
 }
+// Maven Central (SDK-26, alongside JitPack, off by default): CENTRAL=true switches to the verified
+// namespace in.straitlink and requires a signature. See PUBLISHING.md, "Maven Central".
+val central = System.getenv("CENTRAL") == "true"
+if (central) group = "in.straitlink"
 
 repositories { mavenCentral() }
 
@@ -68,5 +73,25 @@ publishing {
                 }
             }
         }
+    }
+    // Central upload bundle: a local Maven layout (jars, .pom, .module, checksums, .asc) the release
+    // workflow zips and sends to the Central Portal. JitPack never uses it.
+    repositories {
+        maven {
+            name = "centralStaging"
+            url = uri(layout.buildDirectory.dir("central-staging"))
+        }
+    }
+}
+
+signing {
+    // Signs only when a key is given (SIGNING_KEY = ASCII-armored private key, SIGNING_PASSWORD).
+    // JitPack and normal builds have none and skip signing; CENTRAL=true refuses to publish unsigned.
+    isRequired = central
+    val key = System.getenv("SIGNING_KEY")
+    if (central && key.isNullOrBlank()) throw GradleException("CENTRAL=true needs SIGNING_KEY: Maven Central rejects unsigned files")
+    if (!key.isNullOrBlank()) {
+        useInMemoryPgpKeys(key, System.getenv("SIGNING_PASSWORD") ?: "")
+        sign(publishing.publications["release"])
     }
 }
