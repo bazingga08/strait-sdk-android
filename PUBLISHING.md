@@ -30,14 +30,31 @@ directly; `scripts/brand.mjs` applies it to the README install block and LICENSE
 4. *Actions → Release* tests the tag and builds the artifacts; check
    `https://jitpack.io/#<owner>/<repo>` shows the tag as green.
 
-## Later: Maven Central (when you want `com.<brand>` coordinates)
+## Maven Central (ready; switched on by the founder's steps)
 
-1. central.sonatype.com → sign up → *Namespaces* → add `com.<brand>` (verify with a
-   DNS TXT record) or use `io.github.<owner>`.
-2. Generate a user token (Account → *Generate User Token*) and a GPG key
-   (`gpg --full-generate-key`; publish it: `gpg --keyserver keyserver.ubuntu.com --send-keys <id>`).
-3. Add the `com.vanniktech.maven.publish` plugin (handles Central upload + signing),
-   set `group = "com.<brand>"`, and add secrets `MAVEN_CENTRAL_USERNAME`,
-   `MAVEN_CENTRAL_PASSWORD`, `SIGNING_KEY` (armored private key), `SIGNING_PASSWORD`;
-   run `./gradlew publishAndReleaseToMavenCentral` from the release workflow.
-4. Swap `withJavadocJar()` for Dokka if you want real API docs in the javadoc jar.
+Built and tested (SDK-26, 21 Oct): `CENTRAL=true` switches the group to **`in.straitlink`** (the reverse
+of straitlink.in) and refuses to publish without a signature; `publishReleasePublicationToCentralStagingRepository`
+writes a signed bundle (jar, sources, javadoc, .pom, .module, md5/sha1/sha256/sha512, .asc) to
+`build/central-staging/`. JitPack and normal builds are unchanged (unsigned, `com.github.<owner>`).
+`.github/workflows/central.yml` (run by hand on a tag) tests, builds the bundle and uploads it as
+**USER_MANAGED**: nothing goes public until you press Publish on central.sonatype.com. Without the
+secrets it tests and stops. Installs would then read `implementation("in.straitlink:strait-sdk-android:X.Y.Z")`.
+
+### Founder steps (about 20 minutes, once)
+
+1. **Account (5 min):** central.sonatype.com → *Sign in* → sign up with **dev@straitlink.in**.
+2. **Namespace (5 min + DNS wait):** *Namespaces* → *Add namespace* → `in.straitlink`. It shows a
+   verification code: add a **TXT** record on **straitlink.in** (root `@`) with that code, then press
+   *Verify*. Works once the DNS change is visible (minutes to an hour).
+3. **Token (2 min):** *Account* (top right) → *Generate User Token* → it shows a username and a password.
+   Put them in the safe file as `MAVEN_CENTRAL_USERNAME=` and `MAVEN_CENTRAL_PASSWORD=`
+   (`! open -a TextEdit ~/Desktop/work/strait/redirect-engine/.env`), save.
+4. **Signing key (Claude does it):** Claude makes the key on the Mac
+   (`gpg --quick-gen-key "Strait <dev@straitlink.in>" ed25519 sign 2y`), publishes the public half to
+   keyserver.ubuntu.com, and puts `SIGNING_KEY` / `SIGNING_PASSWORD` plus the two token values into the
+   GitHub repo's Actions secrets (needs your OK for secret writes).
+5. **First release:** Actions → *Maven Central* → Run workflow on the tag. Then central.sonatype.com →
+   *Deployments* → check it says *Validated* → **Publish**. How you know it worked: the version shows on
+   central.sonatype.com/artifact/in.straitlink/strait-sdk-android within about 30 minutes.
+
+If the GitHub repo moves to the strait-link org, nothing here changes (the group is the domain, not GitHub).
