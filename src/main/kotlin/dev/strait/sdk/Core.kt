@@ -29,6 +29,18 @@ internal fun browserScreenWidth(logicalWidth: Double): Int = ceil(logicalWidth -
 fun portraitScreenWidth(logicalWidth: Double, logicalHeight: Double): Int =
     browserScreenWidth(minOf(logicalWidth, logicalHeight))
 
+/**
+ * The `deviceClass` sent with open reports and the store sheet (contract B14,
+ * engine ADR 0039), from the screen's shorter side in dp: "tablet" from 600
+ * (Android's sw600dp rule), else "phone"; null when unknown (0, negative, NaN).
+ * On Android: `deviceClassForSize(resources.configuration.smallestScreenWidthDp.toDouble())`.
+ */
+fun deviceClassForSize(shortestSide: Double): String? = when {
+    !shortestSide.isFinite() || shortestSide <= 0.0 -> null
+    shortestSide >= 600.0 -> "tablet"
+    else -> "phone"
+}
+
 internal data class SplitUrl(
     val scheme: String,
     val host: String,

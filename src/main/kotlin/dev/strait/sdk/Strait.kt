@@ -12,6 +12,21 @@ data class DeviceFields(
     val timezone: String,
 )
 
+/**
+ * This device's class from the system configuration (contract B14):
+ * `Resources.getSystem().configuration.smallestScreenWidthDp` through
+ * [deviceClassForSize], so "tablet" from 600 dp. Read by reflection because the
+ * SDK has no Android dependency; null on a plain JVM or if anything fails.
+ * The default of [StraitConfig.deviceClass].
+ */
+internal fun systemDeviceClass(): String? = try {
+    val res = Class.forName("android.content.res.Resources").getMethod("getSystem").invoke(null)
+    val conf = res.javaClass.getMethod("getConfiguration").invoke(res)
+    deviceClassForSize(conf.javaClass.getField("smallestScreenWidthDp").getInt(conf).toDouble())
+} catch (_: Throwable) {
+    null
+}
+
 /** Entry points that need no [StraitClient] state. Everything else lives on [StraitClient]. */
 object Strait {
     /** Store sheet (beta): same as [StraitClient.openStoreSheet]. */
