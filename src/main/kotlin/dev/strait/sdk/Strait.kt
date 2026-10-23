@@ -29,7 +29,7 @@ internal fun systemDeviceClass(): String? = try {
 
 /** Entry points that need no [StraitClient] state. Everything else lives on [StraitClient]. */
 object Strait {
-    /** Store sheet (beta): same as [StraitClient.openStoreSheet]. */
+    /** Store sheet (new): same as [StraitClient.openStoreSheet]. */
     fun openStoreSheet(
         client: StraitClient,
         url: String,

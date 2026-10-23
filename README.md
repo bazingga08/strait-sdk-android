@@ -51,11 +51,11 @@ already ships it. Outside Android, add `org.json:json` yourself.
 | Direct links: verified App Links and custom schemes | ● Live |  |
 | Deferred links through the install | ● Live | Play Install Referrer first, then a fingerprint match. |
 | Open reporting, analytics events, app-state labels | ◐ Beta | Every link open recorded once, with an offline retry queue. |
-| Store sheet: Google Play inside your app | ◐ Beta | Keeps the deep link through the install. |
-| iPhone install matching | ◐ Beta | In the iOS and cross-platform SDKs, not this package. Your choice in Dashboard → Settings → iPhone installs: device matching, paste handoff, both or neither, read from Strait at runtime. Device matching is off by default. iPhone matches are labelled Estimated until measured. |
+| Store sheet: Google Play inside your app | New | Keeps the deep link through the install. |
+| iPhone install matching | Opt-in | Off until you choose it; proven on iPhone simulators, the real-iPhone run waits on our App Store listing. In the iOS and cross-platform SDKs, not this package. Your choice in Dashboard → Settings → iPhone installs: device matching, paste handoff, both or neither, read from Strait at runtime. Device matching is off by default. iPhone matches are labelled Estimated until measured. |
 | Published on Maven Central | – Not yet | JitPack builds it from this repo's version tags. |
 
-● Live · ◐ Beta · ○ Planned · – Not yet. The same words as the [platform status](https://straitlink.in/platform-status/) page.
+● Live · ◐ Beta · ○ Planned · – Not yet · Opt-in: off until you switch it on · New: recently shipped. The same words as the [platform status](https://straitlink.in/platform-status/) page.
 
 ## Install
 
@@ -262,7 +262,7 @@ status as an `HttpResponse`.
 **Publishable key:** Dashboard → Get started → Publishable key (`st_pub_live_…`).
 It's safe to include in your app. Never put your secret key (`st_live_…`) in an app.
 
-### 5. Store sheet (beta): install another app without leaving yours
+### 5. Store sheet (new): install another app without leaving yours
 
 When a user taps **Install** for one of your other apps (a sibling, partner or
 "lite" app), open Google Play *inside your app* and keep the deep link. The
@@ -294,7 +294,7 @@ labels it a test feature, and Play shows the full listing when the sheet can't
 show), then the Play app (`market://`), then the Play web page. Each carries
 `referrer=strait_link=<id>&strait_click=<tap>`, which the installed app's Play
 Install Referrer match reads exactly. The tap is recorded with
-`sent_to = store_sheet` and is not billed during the beta.
+`sent_to = store_sheet` and is not billed while the store sheet is new.
 
 It works only where your app is the host. A link tapped inside another
 company's app can't open a store sheet there. If the engine can't be reached,
