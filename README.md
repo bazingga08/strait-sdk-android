@@ -27,7 +27,7 @@ A tap opens the exact screen, and every link open and install is recorded in you
   <a href="#docs-and-support">Talk to the Strait team</a>
 </p>
 
-`strait-sdk-android` (Kotlin) · v0.8.0
+`strait-sdk-android` (Kotlin) · v0.8.1
 
 Deep linking for native Android, part of [Strait](https://straitlink.in). It covers direct links
 (verified App Links and custom-scheme hand-offs), deferred links (Play Install
@@ -51,11 +51,11 @@ already ships it. Outside Android, add `org.json:json` yourself.
 | Direct links: verified App Links and custom schemes | ● Live |  |
 | Deferred links through the install | ● Live | Play Install Referrer first, then a fingerprint match. |
 | Open reporting, analytics events, app-state labels | ◐ Beta | Every link open recorded once, with an offline retry queue. |
-| Store sheet: Google Play inside your app | ◐ Beta | Keeps the deep link through the install. |
-| iPhone install matching | ◐ Beta | In the iOS and cross-platform SDKs, not this package. Your choice in Dashboard → Settings → iPhone installs: device matching, paste handoff, both or neither, read from Strait at runtime. Device matching is off by default. iPhone matches are labelled Estimated until measured. |
+| Store sheet: Google Play inside your app | New | Keeps the deep link through the install. |
+| iPhone install matching | Opt-in | Off until you choose it; proven on iPhone simulators, the real-iPhone run waits on our App Store listing. In the iOS and cross-platform SDKs, not this package. Your choice in Dashboard → Settings → iPhone installs: device matching, paste handoff, both or neither, read from Strait at runtime. Device matching is off by default. iPhone matches are labelled Estimated until measured. |
 | Published on Maven Central | – Not yet | JitPack builds it from this repo's version tags. |
 
-● Live · ◐ Beta · ○ Planned · – Not yet. The same words as the [platform status](https://straitlink.in/platform-status/) page.
+● Live · ◐ Beta · ○ Planned · – Not yet · Opt-in: off until you switch it on · New: recently shipped. The same words as the [platform status](https://straitlink.in/platform-status/) page.
 
 ## Install
 
@@ -69,7 +69,7 @@ dependencyResolutionManagement {
 }
 
 // app/build.gradle.kts
-dependencies { implementation("com.github.strait-link:strait-sdk-android:v0.8.0") }
+dependencies { implementation("com.github.strait-link:strait-sdk-android:v0.8.1") }
 ```
 <!-- /brand:install -->
 
@@ -90,7 +90,7 @@ dependencies { implementation("com.github.strait-link:strait-sdk-android:v0.8.0"
 | B11 JSON built by an encoder (org.json / escaped builders) | ✓ | `StraitClient`, `Strait.build*Body` |
 | B12 `splitUrl` without `Uri`/`URI` (lower-cased, `+`/`%xx` decoded, fragment dropped) | ✓ | `Core.kt`, vectors |
 | B13 `trackEvent`, `reportFingerprint` (origin `app`), `compareFingerprint` | ✓ | `StraitClient` |
-| B14 every open reported once (`newOpenId` = event id), retry queue `strait.pendingOpens` (`pruneOpenQueue`, `shouldRetryReport`), `pendingOpenReports()` / `flushOpenReports()` | ✓ | `StraitClient`, `Core.kt`, vectors |
+| B14 every open reported once (`newOpenId` = event id), retry queue `strait.pendingOpens` (`pruneOpenQueue`, `shouldRetryReport`), `pendingOpenReports()` / `flushOpenReports()`; `deviceClass` on resolve / open / store sheet (`deviceClassForSize`, sw600dp) | ✓ | `StraitClient`, `Core.kt`, vectors v9 |
 | B15 conversion events carry the tap id (`strait.lastTap`, `eventClickId`, 7-day `ATTRIBUTION_WINDOW_MS`, explicit `clickId` override) | ✓ | `StraitClient`, `Core.kt`, vectors |
 | B16 every attributed open supplies the tap id (`/v1/resolve`, `/v1/match`, `/v1/referrer` reply `clickId` → `strait.lastTap`, `replyClickId`) | ✓ | `StraitClient`, `Core.kt`, vectors v4 |
 | B17 `screenWidth` is the portrait (shorter-side) width: `portraitScreenWidth(w, h)` | ✓ | `Core.kt`, README `device`, vectors v5 |
@@ -184,7 +184,13 @@ a preview and not switched on yet (contract B21). Grant rewards from your server
 
 ### What Strait records automatically (no extra code)
 
-Every time a link opens the app, the SDK reports it once (contract B14):
+Every time a link opens the app, the SDK reports it once (contract B14).
+Open reports and the store sheet also send `deviceClass` (`phone` or `tablet`):
+by default the SDK reads `smallestScreenWidthDp` from the system configuration
+(600 dp or more = tablet, the standard sw600dp rule). To set it yourself, pass
+`deviceClass = deviceClassForSize(resources.configuration.smallestScreenWidthDp.toDouble())`
+(or `null` to send nothing) to `StraitConfig`. Older engines ignore it.
+
 
 | How the app opened | Reported via | Joined to |
 |---|---|---|
@@ -256,7 +262,7 @@ status as an `HttpResponse`.
 **Publishable key:** Dashboard → Get started → Publishable key (`st_pub_live_…`).
 It's safe to include in your app. Never put your secret key (`st_live_…`) in an app.
 
-### 5. Store sheet (beta): install another app without leaving yours
+### 5. Store sheet (new): install another app without leaving yours
 
 When a user taps **Install** for one of your other apps (a sibling, partner or
 "lite" app), open Google Play *inside your app* and keep the deep link. The
@@ -288,7 +294,7 @@ labels it a test feature, and Play shows the full listing when the sheet can't
 show), then the Play app (`market://`), then the Play web page. Each carries
 `referrer=strait_link=<id>&strait_click=<tap>`, which the installed app's Play
 Install Referrer match reads exactly. The tap is recorded with
-`sent_to = store_sheet` and is not billed during the beta.
+`sent_to = store_sheet` and is not billed while the store sheet is new.
 
 It works only where your app is the host. A link tapped inside another
 company's app can't open a store sheet there. If the engine can't be reached,

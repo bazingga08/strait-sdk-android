@@ -1,0 +1,17 @@
+{
+  "specCommit": "0cf973d",
+  "files": {
+    "signature": {
+      "path": "src/test/resources/test-vectors.json",
+      "sha256": "d319b5df53f626f64e05258218eb5a6ba3448d6e68bf3af9ad735b17fcfc4365"
+    },
+    "conformance": {
+      "path": "src/test/resources/conformance-vectors.json",
+      "sha256": "4a5db8761af59bb0cb77798d396a4385fbe69374b97458103c2d9f6442f6a20a"
+    }
+  },
+  "conformanceTest": "src/test/kotlin/dev/strait/sdk/ConformanceTest.kt",
+  "exempt": {
+    "parseHandoffUrl": "iOS paste handoff only, contract B19"
+  }
+}
