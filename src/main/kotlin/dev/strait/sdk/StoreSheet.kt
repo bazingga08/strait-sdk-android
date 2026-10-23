@@ -4,7 +4,7 @@ import org.json.JSONObject
 import java.net.URLEncoder
 
 /*
- * Store sheet (beta): open Google Play INSIDE your app for one of your Strait
+ * Store sheet (new): open Google Play INSIDE your app for one of your Strait
  * links and keep the deep link across the install.
  *
  * 1. The engine records the tap (POST /v1/store-sheet, sent_to 'store_sheet')
@@ -81,9 +81,12 @@ object StoreSheet {
 
     private fun enc(s: String): String = URLEncoder.encode(s, "UTF-8")
 
-    /** JSON body for POST /v1/store-sheet. */
-    fun buildBody(publishableKey: String, url: String): String =
-        JSONObject().put("publishableKey", publishableKey).put("url", url).put("platform", "android").toString()
+    /** JSON body for POST /v1/store-sheet; [deviceClass] "phone" | "tablet" is added when set (contract B14). */
+    fun buildBody(publishableKey: String, url: String, deviceClass: String? = null): String {
+        val b = JSONObject().put("publishableKey", publishableKey).put("url", url).put("platform", "android")
+        if (deviceClass == "phone" || deviceClass == "tablet") b.put("deviceClass", deviceClass)
+        return b.toString()
+    }
 
     /** Google Play inline install (half-sheet over the calling app). */
     fun inlineInstallIntent(pkg: String, referrer: String?, callerId: String, listing: String? = null): StoreIntent {

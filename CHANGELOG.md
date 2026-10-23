@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.8.1
+
+- `/v1/resolve`, `/v1/open` (queued retries too) and `/v1/store-sheet` now send `deviceClass`
+  (`"phone"` | `"tablet"`, contract B14, engine ADR 0039). `StraitConfig.deviceClass` defaults to the
+  smallest-width rule (`Configuration.smallestScreenWidthDp` >= 600 = tablet), read from the system
+  configuration; `null` sends nothing. New `deviceClassForSize`. Older engines ignore the field.
+  Conformance vectors v9.
+- Docs: the store sheet is labelled new (not beta) in the README and KDoc; the README's iPhone rows
+  match the platform status page (iPhone links live, install matching opt-in). No behaviour change.
+
 ## 0.8.0
 
 - Smaller public API (SDK-23, decision record: shared-spec `docs/adr/0001-sdk-public-api-surface.md`).
