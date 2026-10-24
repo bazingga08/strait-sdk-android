@@ -16,5 +16,7 @@ jobs:
           java-version: 17
       - uses: gradle/actions/setup-gradle@48b5f213c81028ace310571dc5ec0fbbca0b2947 # v4
       - run: ./gradlew test publishToMavenLocal --no-daemon
+      - name: Example app builds against this source (examples/android)
+        run: ./gradlew -p examples/android assembleDebug --no-daemon
       - run: node scripts/spec-vectors.mjs
       - run: node scripts/brand.mjs
