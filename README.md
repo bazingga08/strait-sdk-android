@@ -337,6 +337,18 @@ real phone.
 `Core.kt` (`classifyUrl`, `pruneOpenQueue`, `parseStraitLink`, ...) are internal since 0.8.0; `StraitClient`
 does all of it for you.
 
+## Example app
+
+[`examples/android`](examples/android) is a one-screen app: it opens a deep link (`straitsample://…` or an
+App Link on your Strait host), shows the deferred link after an install and logs a `purchase` event. It
+builds the SDK from this repo's source, and CI builds it on every pull request.
+
+1. `cp examples/android/strait.example.properties examples/android/strait.properties` and set your
+   publishable key (`st_pub_…`, Dashboard → Get started; the file is git-ignored).
+2. `./gradlew -p examples/android installDebug` from the repo root, with a phone or emulator attached
+   (JDK 17+, Android SDK).
+3. `adb shell am start -a android.intent.action.VIEW -d "straitsample://product/42"` shows the link on screen.
+
 ## Test
 
 ```

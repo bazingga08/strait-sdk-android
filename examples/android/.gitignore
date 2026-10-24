@@ -1,0 +1,4 @@
+# Your key file (copy strait.example.properties) and Android Studio's SDK path.
+strait.properties
+local.properties
+.kotlin/
