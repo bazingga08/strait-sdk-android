@@ -44,6 +44,21 @@ shared vectors. It is a 1:1 port of the React Native reference
 Dependencies: Kotlin stdlib only. `org.json` is `compileOnly` because Android
 already ships it. Outside Android, add `org.json:json` yourself.
 
+## Quick start (60 seconds)
+
+**1. Install.** Add JitPack and `implementation("com.github.strait-link:strait-sdk-android:<version>")`, as in [Install](#install).
+
+**2. Check your key and a link.** In **Dashboard → Links**, make a link with the path `summer` and the destination `https://shop.example.com/product/42`. Then ask Strait about it the way this SDK will:
+
+```sh
+curl -s https://<your-handle>.strait.link/v1/resolve -H 'Content-Type: application/json' \
+  -d '{"publishableKey":"st_pub_live_…","url":"https://<your-handle>.strait.link/summer","platform":"android"}'
+```
+
+**You should see:** `{"matched":true,"longUrl":"https://shop.example.com/product/42",…}`. The key comes from **Dashboard → Get started** and is safe in apps. `"reason":"not_found"` means the key is from another workspace or the path is wrong. The check counts as one tap in **Dashboard → Analytics**.
+
+**3. Wire it.** Create one `StraitClient` in your `Application` and feed it links from your `Activity`, as in [Android integration](#android-integration). The [Android guide](https://straitlink.in/docs/sdks/android/) has the intent filters and an `adb` command that brings your app to the front.
+
 ## Platform features
 
 | Feature | Status | Notes |
